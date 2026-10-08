@@ -97,3 +97,20 @@ class BowlerScore {
     return totalOvers > 0 ? runsConceded / totalOvers : 0.0;
   }
 }
+
+class CommentaryItem {
+  final String overBall;
+  final String text;
+  final int runs;
+  final bool isWicket;
+  final bool isBoundary;
+
+  CommentaryItem({
+    required this.overBall,
+    required this.text,
+    required this.runs,
+    this.isWicket = false,
+    this.isBoundary = false,
+  });
+}
+

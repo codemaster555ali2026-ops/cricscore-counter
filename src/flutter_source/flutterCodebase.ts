@@ -1,1112 +1,153 @@
 export interface FlutterFile {
   path: string;
   name: string;
-  category: 'config' | 'main' | 'models' | 'services' | 'screens' | 'widgets';
+  category: "config" | "lib" | "screens" | "services" | "widgets" | "models" | "main";
   content: string;
 }
 
 export const FLUTTER_CODEBASE: FlutterFile[] = [
   {
-    path: '.github/workflows/build_apk.yml',
-    name: 'build_apk.yml',
-    category: 'config',
-    content: `name: Build Cricket Scoreboard APK
-
-on:
-  push:
-    branches: [ main, master ]
-  workflow_dispatch:
-
-jobs:
-  build-apk:
-    name: Build Android Release APK
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Set up Java 17
-        uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'gradle'
-
-      - name: Set up Flutter SDK (Latest Stable)
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-          cache: true
-
-      - name: Prepare Android Platform & Wrapper
-        run: |
-          flutter config --no-analytics
-          rm -f ./android/build.gradle.kts ./android/app/build.gradle.kts ./android/settings.gradle.kts || true
-          chmod +x ./android/gradlew || true
-
-      - name: Install Dependencies
-        run: flutter pub get
-
-      - name: Compile Android Release APK
-        run: flutter build apk --release --no-tree-shake-icons --android-skip-build-dependency-validation
-
-      - name: Upload Release APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: CricketScoreboard-Release-APK
-          path: build/app/outputs/flutter-apk/app-release.apk
-          if-no-files-found: error
-          retention-days: 14`
+    "path": ".github/workflows/build_apk.yml",
+    "name": "build_apk.yml",
+    "category": "config",
+    "content": "name: Build Cricket Scoreboard APK\n\non:\n  push:\n    branches: [ main, master ]\n  workflow_dispatch: # Allows manual trigger from GitHub mobile browser or GitHub mobile app\n\njobs:\n  build-apk:\n    name: Build Android Release APK\n    runs-on: ubuntu-latest\n    timeout-minutes: 25\n\n    steps:\n      - name: 📥 Checkout Repository\n        uses: actions/checkout@v4\n\n      - name: ☕ Set up Java 17\n        uses: actions/setup-java@v5\n        with:\n          distribution: 'temurin'\n          java-version: '17'\n          cache: 'gradle'\n\n      - name: 🚀 Set up Flutter SDK (Latest Stable with Kotlin 1.9.22+)\n        uses: subosito/flutter-action@v2\n        with:\n          channel: 'stable'\n          cache: true\n\n      - name: 🔧 Prepare Android Platform & Wrapper\n        run: |\n          flutter config --no-analytics\n          rm -f ./android/build.gradle.kts ./android/app/build.gradle.kts ./android/settings.gradle.kts || true\n          chmod +x ./android/gradlew || true\n\n      - name: 📦 Install Flutter & Dart Dependencies\n        run: flutter pub get\n\n      - name: 🔨 Compile Android Release APK\n        run: flutter build apk --release --no-tree-shake-icons --android-skip-build-dependency-validation\n\n      - name: 📤 Upload Cricket Scoreboard Release APK Artifact\n        uses: actions/upload-artifact@v4\n        with:\n          name: CricketScoreboard-Release-APK\n          path: build/app/outputs/flutter-apk/app-release.apk\n          if-no-files-found: error\n          retention-days: 14\n"
   },
   {
-    path: 'codemagic.yaml',
-    name: 'codemagic.yaml',
-    category: 'config',
-    content: `workflows:
-  android-release-workflow:
-    name: Build Cricket Scoreboard Android APK (Release)
-    max_build_duration: 30
-    instance_type: linux_x2
-    environment:
-      flutter: stable
-      java: 17
-    scripts:
-      - name: Set up local.properties
-        script: |
-          echo "flutter.sdk=\\$FLUTTER_ROOT" > "\\$CM_BUILD_DIR/android/local.properties"
-      - name: Get Flutter packages
-        script: |
-          flutter packages pub get
-      - name: Build Android Release APK
-        script: |
-          flutter build apk --release --no-tree-shake-icons --android-skip-build-dependency-validation
-    artifacts:
-      - build/**/outputs/**/*.apk
-      - build/**/outputs/**/mapping.txt
-    publishing:
-      email:
-        recipients:
-          - codemaster555ali2026@gmail.com
-        notify:
-          success: true
-          failure: true`
+    "path": "codemagic.yaml",
+    "name": "codemagic.yaml",
+    "category": "config",
+    "content": "workflows:\n  android-release-workflow:\n    name: Build Cricket Scoreboard Android APK (Release)\n    max_build_duration: 30\n    instance_type: linux_x2\n    environment:\n      flutter: stable\n      java: 17\n    scripts:\n      - name: Set up local.properties\n        script: |\n          echo \"flutter.sdk=$FLUTTER_ROOT\" > \"$CM_BUILD_DIR/android/local.properties\"\n      - name: Get Flutter packages\n        script: |\n          flutter packages pub get\n      - name: Build Android Release APK\n        script: |\n          flutter build apk --release --no-tree-shake-icons --android-skip-build-dependency-validation\n    artifacts:\n      - build/**/outputs/**/*.apk\n      - build/**/outputs/**/mapping.txt\n    publishing:\n      email:\n        recipients:\n          - codemaster555ali2026@gmail.com\n        notify:\n          success: true\n          failure: true\n"
   },
   {
-    path: 'android/build.gradle',
-    name: 'build.gradle',
-    category: 'config',
-    content: `allprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
-
-rootProject.buildDir = '../build'
-subprojects {
-    project.buildDir = "\${rootProject.buildDir}/\${project.name}"
-}
-subprojects {
-    project.evaluationDependsOn(':app')
-}
-
-tasks.register("clean", Delete) {
-    delete rootProject.buildDir
-}`
+    "path": "android/build.gradle",
+    "name": "build.gradle",
+    "category": "config",
+    "content": "allprojects {\n    repositories {\n        google()\n        mavenCentral()\n    }\n}\n\nrootProject.buildDir = '../build'\nsubprojects {\n    project.buildDir = \"${rootProject.buildDir}/${project.name}\"\n}\nsubprojects {\n    project.evaluationDependsOn(':app')\n}\n\ntasks.register(\"clean\", Delete) {\n    delete rootProject.buildDir\n}\n\n"
   },
   {
-    path: 'android/settings.gradle',
-    name: 'settings.gradle',
-    category: 'config',
-    content: `pluginManagement {
-    def flutterSdkPath = {
-        def properties = new Properties()
-        file("local.properties").withInputStream { properties.load(it) }
-        def flutterSdkPath = properties.getProperty("flutter.sdk")
-        assert flutterSdkPath != null : "flutter.sdk not set in local.properties"
-        return flutterSdkPath
-    }()
-
-    includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
-
-    repositories {
-        google()
-        mavenCentral()
-        gradlePluginPortal()
-    }
-}
-
-plugins {
-    id "dev.flutter.flutter-plugin-loader" version "1.0.0"
-    id "com.android.application" version "8.3.2" apply false
-    id "org.jetbrains.kotlin.android" version "2.0.20" apply false
-}
-
-include ":app"`
+    "path": "android/settings.gradle",
+    "name": "settings.gradle",
+    "category": "config",
+    "content": "pluginManagement {\n    def flutterSdkPath = {\n        def properties = new Properties()\n        file(\"local.properties\").withInputStream { properties.load(it) }\n        def flutterSdkPath = properties.getProperty(\"flutter.sdk\")\n        assert flutterSdkPath != null : \"flutter.sdk not set in local.properties\"\n        return flutterSdkPath\n    }()\n\n    includeBuild(\"$flutterSdkPath/packages/flutter_tools/gradle\")\n\n    repositories {\n        google()\n        mavenCentral()\n        gradlePluginPortal()\n    }\n}\n\nplugins {\n    id \"dev.flutter.flutter-plugin-loader\" version \"1.0.0\"\n    id \"com.android.application\" version \"8.3.2\" apply false\n    id \"org.jetbrains.kotlin.android\" version \"2.0.20\" apply false\n}\n\ninclude \":app\"\n"
   },
   {
-    path: 'android/app/build.gradle',
-    name: 'app/build.gradle',
-    category: 'config',
-    content: `plugins {
-    id "com.android.application"
-    id "org.jetbrains.kotlin.android"
-    id "dev.flutter.flutter-gradle-plugin"
-}
-
-android {
-    namespace "com.cricket.scoreboard.cricket_scoreboard_15phases"
-    compileSdk = 36
-    ndkVersion flutter.ndkVersion
-
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = '17'
-    }
-
-    defaultConfig {
-        applicationId "com.cricket.scoreboard.cricket_scoreboard_15phases"
-        minSdkVersion 21
-        targetSdkVersion 36
-        versionCode 1
-        versionName "1.0"
-        multiDexEnabled true
-    }
-
-    buildTypes {
-        release {
-            signingConfig signingConfigs.debug
-            minifyEnabled false
-            shrinkResources false
-        }
-    }
-}
-
-flutter {
-    source '../..'
-}
-
-dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.22"
-    implementation 'androidx.multidex:multidex:2.0.1'
-    implementation 'com.google.android.gms:play-services-ads:23.0.0'
-}`
+    "path": "android/app/build.gradle",
+    "name": "app/build.gradle",
+    "category": "config",
+    "content": "plugins {\n    id \"com.android.application\"\n    id \"org.jetbrains.kotlin.android\"\n    id \"dev.flutter.flutter-gradle-plugin\"\n}\n\ndef localProperties = new Properties()\ndef localPropertiesFile = rootProject.file('local.properties')\nif (localPropertiesFile.exists()) {\n    localPropertiesFile.withReader('UTF-8') { reader ->\n        localProperties.load(reader)\n    }\n}\n\ndef flutterVersionCode = localProperties.getProperty('flutter.versionCode') ?: '1'\ndef flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '1.0'\n\nandroid {\n    namespace \"com.cricket.scoreboard.cricket_scoreboard_15phases\"\n    compileSdk = 36\n    ndkVersion flutter.ndkVersion\n\n    compileOptions {\n        sourceCompatibility JavaVersion.VERSION_17\n        targetCompatibility JavaVersion.VERSION_17\n    }\n\n    kotlinOptions {\n        jvmTarget = '17'\n    }\n\n    sourceSets {\n        main.java.srcDirs += 'src/main/kotlin'\n    }\n\n    defaultConfig {\n        applicationId \"com.cricket.scoreboard.cricket_scoreboard_15phases\"\n        minSdkVersion 21\n        targetSdkVersion 36\n        versionCode flutterVersionCode.toInteger()\n        versionName flutterVersionName\n        multiDexEnabled true\n    }\n\n    buildTypes {\n        release {\n            signingConfig signingConfigs.debug\n            minifyEnabled false\n            shrinkResources false\n        }\n    }\n}\n\nflutter {\n    source '../..'\n}\n\ndependencies {\n    implementation \"org.jetbrains.kotlin:kotlin-stdlib:2.0.20\"\n    implementation 'androidx.multidex:multidex:2.0.1'\n    implementation 'com.google.android.gms:play-services-ads:23.0.0'\n}\n"
   },
   {
-    path: 'android/gradle.properties',
-    name: 'gradle.properties',
-    category: 'config',
-    content: `org.gradle.jvmargs=-Xmx4G -XX:MaxMetaspaceSize=1G
-android.useAndroidX=true
-android.enableJetifier=true
-android.newDsl=false
-android.builtInKotlin=false`
+    "path": "android/gradle.properties",
+    "name": "gradle.properties",
+    "category": "config",
+    "content": "org.gradle.jvmargs=-Xmx4G -XX:MaxMetaspaceSize=1G\nandroid.useAndroidX=true\nandroid.enableJetifier=true\nandroid.newDsl=false\nandroid.builtInKotlin=false\n\n"
   },
   {
-    path: 'android/gradle/wrapper/gradle-wrapper.properties',
-    name: 'gradle-wrapper.properties',
-    category: 'config',
-    content: `distributionBase=GRADLE_USER_HOME
-distributionPath=wrapper/dists
-zipStoreBase=GRADLE_USER_HOME
-zipStorePath=wrapper/dists
-distributionUrl=https\\://services.gradle.org/distributions/gradle-8.14-all.zip`
+    "path": "android/gradle/wrapper/gradle-wrapper.properties",
+    "name": "gradle-wrapper.properties",
+    "category": "config",
+    "content": "distributionBase=GRADLE_USER_HOME\ndistributionPath=wrapper/dists\nzipStoreBase=GRADLE_USER_HOME\nzipStorePath=wrapper/dists\ndistributionUrl=https\\://services.gradle.org/distributions/gradle-8.14-all.zip\n"
   },
   {
-    path: 'android/app/src/main/AndroidManifest.xml',
-    name: 'AndroidManifest.xml',
-    category: 'config',
-    content: `<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-
-    <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-    <uses-permission android:name="android.permission.WAKE_LOCK"/>
-
-    <application
-        android:label="Cricket Scoreboard"
-        android:name="\${applicationName}"
-        android:icon="@mipmap/ic_launcher"
-        android:hardwareAccelerated="true">
-
-        <!-- Google AdMob Application ID -->
-        <meta-data
-            android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713"/>
-
-        <meta-data
-            android:name="com.google.android.gms.ads.flag.OPTIMIZE_INITIALIZATION"
-            android:value="true"/>
-        <meta-data
-            android:name="com.google.android.gms.ads.flag.OPTIMIZE_AD_LOADING"
-            android:value="true"/>
-
-        <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:launchMode="singleTop"
-            android:theme="@style/LaunchTheme"
-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
-            android:hardwareAccelerated="true"
-            android:windowSoftInputMode="adjustResize">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
-            </intent-filter>
-        </activity>
-
-        <!-- Flutter v2 Embedding Declaration -->
-        <meta-data
-            android:name="flutterEmbedding"
-            android:value="2" />
-    </application>
-</manifest>`
+    "path": "android/app/src/main/AndroidManifest.xml",
+    "name": "AndroidManifest.xml",
+    "category": "config",
+    "content": "<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\">\n\n    <!-- Permissions required by Google AdMob -->\n    <uses-permission android:name=\"android.permission.INTERNET\"/>\n    <uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\"/>\n    <uses-permission android:name=\"android.permission.WAKE_LOCK\"/>\n\n    <application\n        android:label=\"Cricket Scoreboard\"\n        android:name=\"${applicationName}\"\n        android:icon=\"@mipmap/ic_launcher\"\n        android:roundIcon=\"@mipmap/ic_launcher_round\"\n        android:hardwareAccelerated=\"true\">\n\n        <!-- Google AdMob Application ID (Official Google Test App ID for Android) -->\n        <!-- Replace 'ca-app-pub-3940256099942544~3347511713' with your live AdMob App ID in production -->\n        <meta-data\n            android:name=\"com.google.android.gms.ads.APPLICATION_ID\"\n            android:value=\"ca-app-pub-3940256099942544~3347511713\"/>\n\n        <!-- AdMob Ad optimization flags -->\n        <meta-data\n            android:name=\"com.google.android.gms.ads.flag.OPTIMIZE_INITIALIZATION\"\n            android:value=\"true\"/>\n        <meta-data\n            android:name=\"com.google.android.gms.ads.flag.OPTIMIZE_AD_LOADING\"\n            android:value=\"true\"/>\n\n        <activity\n            android:name=\".MainActivity\"\n            android:exported=\"true\"\n            android:launchMode=\"singleTop\"\n            android:theme=\"@style/LaunchTheme\"\n            android:configChanges=\"orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode\"\n            android:hardwareAccelerated=\"true\"\n            android:windowSoftInputMode=\"adjustResize\">\n            \n            <meta-data\n                android:name=\"io.flutter.embedding.android.NormalTheme\"\n                android:resource=\"@style/NormalTheme\" />\n            \n            <intent-filter>\n                <action android:name=\"android.intent.action.MAIN\"/>\n                <category android:name=\"android.intent.category.LAUNCHER\"/>\n            </intent-filter>\n        </activity>\n\n        <meta-data\n            android:name=\"flutterEmbedding\"\n            android:value=\"2\" />\n    </application>\n</manifest>\n"
   },
   {
-    path: 'android/app/src/main/kotlin/com/cricket/scoreboard/cricket_scoreboard_15phases/MainActivity.kt',
-    name: 'MainActivity.kt (Flutter v2 Embedding)',
-    category: 'config',
-    content: `package com.cricket.scoreboard.cricket_scoreboard_15phases
-
-import io.flutter.embedding.android.FlutterActivity
-
-class MainActivity: FlutterActivity() {
-}`
+    "path": "android/app/src/main/res/values/styles.xml",
+    "name": "styles.xml",
+    "category": "config",
+    "content": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<resources>\n    <!-- Theme applied to the Android Window while the process is starting when the OS's Dark Mode setting is off -->\n    <style name=\"LaunchTheme\" parent=\"@android:style/Theme.Black.NoTitleBar\">\n        <item name=\"android:windowBackground\">@drawable/launch_background</item>\n    </style>\n    <!-- Theme applied to the Android Window as soon as the process has started -->\n    <style name=\"NormalTheme\" parent=\"@android:style/Theme.Black.NoTitleBar\">\n        <item name=\"android:windowBackground\">?android:colorBackground</item>\n    </style>\n</resources>\n"
   },
   {
-    path: 'android/app/src/main/res/values/styles.xml',
-    name: 'styles.xml',
-    category: 'config',
-    content: `<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <style name="LaunchTheme" parent="@android:style/Theme.Black.NoTitleBar">
-        <item name="android:windowBackground">@drawable/launch_background</item>
-    </style>
-    <style name="NormalTheme" parent="@android:style/Theme.Black.NoTitleBar">
-        <item name="android:windowBackground">?android:colorBackground</item>
-    </style>
-</resources>`
+    "path": "android/app/src/main/res/values/colors.xml",
+    "name": "colors.xml",
+    "category": "config",
+    "content": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<resources>\n    <color name=\"ic_launcher_background\">#0B192C</color>\n</resources>\n"
   },
   {
-    path: 'android/app/src/main/res/values/colors.xml',
-    name: 'colors.xml',
-    category: 'config',
-    content: `<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <color name="ic_launcher_background">#0B192C</color>
-</resources>`
+    "path": "android/app/src/main/res/drawable/launch_background.xml",
+    "name": "launch_background.xml",
+    "category": "config",
+    "content": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<layer-list xmlns:android=\"http://schemas.android.com/apk/res/android\">\n    <item android:drawable=\"@android:color/black\" />\n</layer-list>\n"
   },
   {
-    path: 'android/app/src/main/res/drawable/launch_background.xml',
-    name: 'launch_background.xml',
-    category: 'config',
-    content: `<?xml version="1.0" encoding="utf-8"?>
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@android:color/black" />
-</layer-list>`
+    "path": "pubspec.yaml",
+    "name": "pubspec.yaml",
+    "category": "config",
+    "content": "name: cricket_scoreboard_15phases\ndescription: \"Cricket Scoreboard App - 15 Phases: Complete Data, Smart Features, Professional Experience\"\npublish_to: \"none\"\nversion: 1.0.0+1\n\nenvironment:\n  sdk: \">=3.0.0 <4.0.0\"\n\ndependencies:\n  flutter:\n    sdk: flutter\n  flutter_riverpod: ^2.5.1\n  hive: ^2.2.3\n  hive_flutter: ^1.1.0\n  google_mobile_ads: ^5.1.0\n  intl: ^0.19.0\n  google_fonts: ^6.2.1\n\ndev_dependencies:\n  flutter_test:\n    sdk: flutter\n  flutter_lints: ^3.0.0\n\nflutter:\n  uses-material-design: true\n\n"
   },
   {
-    path: 'ios/Runner/Info.plist',
-    name: 'Info.plist',
-    category: 'config',
-    content: `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-	<key>CFBundleName</key>
-	<string>Cricket Scoreboard</string>
-	<key>CFBundleIdentifier</key>
-	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-	<key>GADApplicationIdentifier</key>
-	<string>ca-app-pub-3940256099942544~1458002511</string>
-</dict>
-</plist>`
+    "path": "lib/main.dart",
+    "name": "main.dart",
+    "category": "main",
+    "content": "import 'package:flutter/material.dart';\nimport 'package:flutter_riverpod/flutter_riverpod.dart';\nimport 'package:google_fonts/google_fonts.dart';\nimport 'package:hive_flutter/hive_flutter.dart';\nimport 'package:google_mobile_ads/google_mobile_ads.dart';\nimport 'services/admob_service.dart';\nimport 'screens/home_screen.dart';\n\nvoid main() async {\n  WidgetsFlutterBinding.ensureInitialized();\n  \n  // Initialize Hive for local persistence of matches, teams, and player stats\n  await Hive.initFlutter();\n  \n  // Initialize Google Mobile Ads (AdMob)\n  await MobileAds.instance.initialize();\n  AdMobService.initialize();\n\n  runApp(\n    const ProviderScope(\n      child: CricketScoreboardApp(),\n    ),\n  );\n}\n\nclass CricketScoreboardApp extends StatelessWidget {\n  const CricketScoreboardApp({super.key});\n\n  @override\n  Widget build(BuildContext context) {\n    return MaterialApp(\n      title: 'Cricket Scoreboard App - 15 Phases',\n      debugShowCheckedModeBanner: false,\n      themeMode: ThemeMode.dark,\n      darkTheme: ThemeData(\n        useMaterial3: true,\n        brightness: Brightness.dark,\n        scaffoldBackgroundColor: const Color(0xFF0B192C),\n        colorScheme: const ColorScheme.dark(\n          primary: Color(0xFF008DDA),\n          secondary: Color(0xFF41B06E),\n          surface: Color(0xFF1E3E62),\n          onSurface: Colors.white,\n          error: Color(0xFFFF4D4D),\n        ),\n        textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),\n        appBarTheme: const AppBarTheme(\n          backgroundColor: Color(0xFF0B192C),\n          elevation: 0,\n          centerTitle: true,\n        ),\n        cardTheme: CardThemeData(\n          color: const Color(0xFF1E3E62),\n          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),\n          elevation: 4,\n        ),\n        elevatedButtonTheme: ElevatedButtonThemeData(\n          style: ElevatedButton.styleFrom(\n            backgroundColor: const Color(0xFF008DDA),\n            foregroundColor: Colors.white,\n            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),\n          ),\n        ),\n      ),\n      theme: ThemeData(\n        useMaterial3: true,\n        brightness: Brightness.light,\n        scaffoldBackgroundColor: const Color(0xFFF4F6F9),\n        colorScheme: const ColorScheme.light(\n          primary: Color(0xFF008DDA),\n          secondary: Color(0xFF41B06E),\n          surface: Colors.white,\n          onSurface: Color(0xFF0B192C),\n        ),\n        textTheme: GoogleFonts.outfitTextTheme(ThemeData.light().textTheme),\n      ),\n      home: const HomeScreen(),\n    );\n  }\n}\n"
   },
   {
-    path: 'pubspec.yaml',
-    name: 'pubspec.yaml',
-    category: 'config',
-    content: `name: cricket_scoreboard_15phases
-description: "Cricket Scoreboard App - 15 Phases: Complete Data, Smart Features, Professional Experience"
-publish_to: "none"
-version: 1.0.0+1
-
-environment:
-  sdk: ">=3.0.0 <4.0.0"
-
-dependencies:
-  flutter:
-    sdk: flutter
-  flutter_riverpod: ^2.5.1
-  hive: ^2.2.3
-  hive_flutter: ^1.1.0
-  google_mobile_ads: ^5.1.0
-  intl: ^0.19.0
-  google_fonts: ^6.2.1
-
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^3.0.0
-
-flutter:
-  uses-material-design: true`
+    "path": "lib/services/admob_service.dart",
+    "name": "admob_service.dart",
+    "category": "services",
+    "content": "import 'dart:io';\nimport 'package:flutter/foundation.dart';\nimport 'package:google_mobile_ads/google_mobile_ads.dart';\n\nclass AdMobService {\n  // ==========================================\n  // OFFICIAL GOOGLE ADMOB TEST AD UNIT IDS\n  // Replace these with your live Ad Unit IDs before releasing to Google Play / App Store\n  // ==========================================\n  \n  // Banner Ad Units\n  static const String _testBannerAndroid = 'ca-app-pub-3940256099942544/6300978111';\n  static const String _testBannerIOS = 'ca-app-pub-3940256099942544/2934735716';\n\n  // Interstitial Ad Units\n  static const String _testInterstitialAndroid = 'ca-app-pub-3940256099942544/1033173712';\n  static const String _testInterstitialIOS = 'ca-app-pub-3940256099942544/4411468910';\n\n  // Rewarded Video Ad Units\n  static const String _testRewardedAndroid = 'ca-app-pub-3940256099942544/5224354917';\n  static const String _testRewardedIOS = 'ca-app-pub-3940256099942544/1712485313';\n\n  // Platform-aware unit getters\n  static String get bannerAdUnitId {\n    if (kIsWeb) return _testBannerAndroid;\n    if (Platform.isAndroid) return _testBannerAndroid;\n    if (Platform.isIOS) return _testBannerIOS;\n    return _testBannerAndroid;\n  }\n\n  static String get interstitialAdUnitId {\n    if (kIsWeb) return _testInterstitialAndroid;\n    if (Platform.isAndroid) return _testInterstitialAndroid;\n    if (Platform.isIOS) return _testInterstitialIOS;\n    return _testInterstitialAndroid;\n  }\n\n  static String get rewardedAdUnitId {\n    if (kIsWeb) return _testRewardedAndroid;\n    if (Platform.isAndroid) return _testRewardedAndroid;\n    if (Platform.isIOS) return _testRewardedIOS;\n    return _testRewardedAndroid;\n  }\n\n  // State management\n  static InterstitialAd? _interstitialAd;\n  static bool isInterstitialLoaded = false;\n\n  static RewardedAd? _rewardedAd;\n  static bool isRewardedLoaded = false;\n\n  /// Call once inside main() after WidgetsFlutterBinding.ensureInitialized()\n  static Future<void> initialize() async {\n    try {\n      await MobileAds.instance.initialize();\n      loadInterstitialAd();\n      loadRewardedAd();\n      debugPrint('[AdMobService] Google Mobile Ads initialized successfully.');\n    } catch (e) {\n      debugPrint('[AdMobService] Initialization warning: $e');\n    }\n  }\n\n  /// Create and load a 320x50 Banner Ad\n  static BannerAd createBannerAd({\n    required Function() onAdLoaded,\n    Function(LoadAdError)? onAdFailed,\n  }) {\n    return BannerAd(\n      adUnitId: bannerAdUnitId,\n      size: AdSize.banner,\n      request: const AdRequest(),\n      listener: BannerAdListener(\n        onAdLoaded: (ad) {\n          debugPrint('[AdMobService] Banner Ad loaded successfully.');\n          onAdLoaded();\n        },\n        onAdFailedToLoad: (ad, error) {\n          debugPrint('[AdMobService] Banner Ad failed to load: ${error.message}');\n          ad.dispose();\n          if (onAdFailed != null) onAdFailed(error);\n        },\n        onAdOpened: (ad) => debugPrint('[AdMobService] Banner ad opened.'),\n        onAdClosed: (ad) => debugPrint('[AdMobService] Banner ad closed.'),\n      ),\n    );\n  }\n\n  /// Preload Full-Screen Interstitial Ad\n  static void loadInterstitialAd() {\n    InterstitialAd.load(\n      adUnitId: interstitialAdUnitId,\n      request: const AdRequest(),\n      adLoadCallback: InterstitialAdLoadCallback(\n        onAdLoaded: (ad) {\n          _interstitialAd = ad;\n          isInterstitialLoaded = true;\n          debugPrint('[AdMobService] Interstitial Ad loaded and ready.');\n          \n          _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(\n            onAdDismissedFullScreenContent: (ad) {\n              ad.dispose();\n              isInterstitialLoaded = false;\n              loadInterstitialAd(); // Immediately preload next ad\n            },\n            onAdFailedToShowFullScreenContent: (ad, error) {\n              ad.dispose();\n              isInterstitialLoaded = false;\n              loadInterstitialAd();\n            },\n          );\n        },\n        onAdFailedToLoad: (error) {\n          debugPrint('[AdMobService] Interstitial Ad failed to load: ${error.message}');\n          isInterstitialLoaded = false;\n          _interstitialAd = null;\n        },\n      ),\n    );\n  }\n\n  /// Show Interstitial Ad (e.g., when an over completes or match finishes)\n  static void showInterstitialAd({Function()? onComplete}) {\n    if (isInterstitialLoaded && _interstitialAd != null) {\n      _interstitialAd!.show();\n      if (onComplete != null) onComplete();\n    } else {\n      debugPrint('[AdMobService] Interstitial Ad was not ready yet, preloading...');\n      loadInterstitialAd();\n      if (onComplete != null) onComplete();\n    }\n  }\n\n  /// Preload Rewarded Video Ad\n  static void loadRewardedAd() {\n    RewardedAd.load(\n      adUnitId: rewardedAdUnitId,\n      request: const AdRequest(),\n      rewardedAdLoadCallback: RewardedAdLoadCallback(\n        onAdLoaded: (ad) {\n          _rewardedAd = ad;\n          isRewardedLoaded = true;\n          debugPrint('[AdMobService] Rewarded Video Ad loaded and ready.');\n\n          _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(\n            onAdDismissedFullScreenContent: (ad) {\n              ad.dispose();\n              isRewardedLoaded = false;\n              loadRewardedAd(); // Preload next\n            },\n            onAdFailedToShowFullScreenContent: (ad, error) {\n              ad.dispose();\n              isRewardedLoaded = false;\n              loadRewardedAd();\n            },\n          );\n        },\n        onAdFailedToLoad: (error) {\n          debugPrint('[AdMobService] Rewarded Ad failed to load: ${error.message}');\n          isRewardedLoaded = false;\n          _rewardedAd = null;\n        },\n      ),\n    );\n  }\n\n  /// Show Rewarded Video Ad and trigger reward callback\n  static void showRewardedAd({required Function(RewardItem reward) onUserEarnedReward}) {\n    if (isRewardedLoaded && _rewardedAd != null) {\n      _rewardedAd!.show(\n        onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {\n          debugPrint('[AdMobService] User earned reward: ${reward.amount} ${reward.type}');\n          onUserEarnedReward(reward);\n        },\n      );\n    } else {\n      debugPrint('[AdMobService] Rewarded Ad not ready. Preloading...');\n      loadRewardedAd();\n    }\n  }\n}\n"
   },
   {
-    path: 'lib/main.dart',
-    name: 'main.dart',
-    category: 'main',
-    content: `import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'services/admob_service.dart';
-import 'screens/home_screen.dart';
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Hive.initFlutter();
-  await MobileAds.instance.initialize();
-  AdMobService.initialize();
-
-  runApp(const ProviderScope(child: CricketScoreboardApp()));
-}
-
-class CricketScoreboardApp extends StatelessWidget {
-  const CricketScoreboardApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Cricket Scoreboard App',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark(useMaterial3: true),
-      home: const HomeScreen(),
-    );
-  }
-}`
+    "path": "lib/services/hive_storage_service.dart",
+    "name": "hive_storage_service.dart",
+    "category": "services",
+    "content": "import 'dart:convert';\nimport 'package:hive/hive.dart';\nimport '../models/match_model.dart';\nimport '../models/player_career_stats.dart';\n\nclass HiveStorageService {\n  static const String boxMatches = 'matches_box';\n  static const String boxTeams = 'teams_box';\n  static const String boxPlayerStats = 'player_stats_box';\n\n  static Future<void> init() async {\n    await Hive.openBox(boxMatches);\n    await Hive.openBox(boxTeams);\n    await Hive.openBox(boxPlayerStats);\n  }\n\n  static Future<void> saveMatch(String matchId, Map<String, dynamic> matchData) async {\n    final box = Hive.box(boxMatches);\n    await box.put(matchId, jsonEncode(matchData));\n  }\n\n  static List<Map<String, dynamic>> getAllMatches() {\n    final box = Hive.box(boxMatches);\n    return box.values\n        .map((e) => jsonDecode(e as String) as Map<String, dynamic>)\n        .toList();\n  }\n\n  static Future<void> deleteMatch(String matchId) async {\n    final box = Hive.box(boxMatches);\n    await box.delete(matchId);\n  }\n\n  static Future<void> saveTeam(String teamId, Map<String, dynamic> teamData) async {\n    final box = Hive.box(boxTeams);\n    await box.put(teamId, jsonEncode(teamData));\n  }\n\n  static List<Map<String, dynamic>> getAllTeams() {\n    final box = Hive.box(boxTeams);\n    return box.values\n        .map((e) => jsonDecode(e as String) as Map<String, dynamic>)\n        .toList();\n  }\n}\n"
   },
   {
-    path: 'lib/services/admob_service.dart',
-    name: 'admob_service.dart',
-    category: 'services',
-    content: `import 'dart:io';
-import 'package:flutter/foundation.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
-
-class AdMobService {
-  static const String _testBannerAndroid = 'ca-app-pub-3940256099942544/6300978111';
-  static const String _testBannerIOS = 'ca-app-pub-3940256099942544/2934735716';
-  static const String _testInterstitialAndroid = 'ca-app-pub-3940256099942544/1033173712';
-  static const String _testInterstitialIOS = 'ca-app-pub-3940256099942544/4411468910';
-  static const String _testRewardedAndroid = 'ca-app-pub-3940256099942544/5224354917';
-
-  static String get bannerAdUnitId => kIsWeb || Platform.isAndroid ? _testBannerAndroid : _testBannerIOS;
-  static String get interstitialAdUnitId => kIsWeb || Platform.isAndroid ? _testInterstitialAndroid : _testInterstitialIOS;
-
-  static InterstitialAd? _interstitialAd;
-  static bool isInterstitialLoaded = false;
-
-  static void initialize() {
-    loadInterstitialAd();
-  }
-
-  static BannerAd createBannerAd({required Function() onAdLoaded}) {
-    return BannerAd(
-      adUnitId: bannerAdUnitId,
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) => onAdLoaded(),
-        onAdFailedToLoad: (ad, error) => ad.dispose(),
-      ),
-    );
-  }
-
-  static void loadInterstitialAd() {
-    InterstitialAd.load(
-      adUnitId: interstitialAdUnitId,
-      request: const AdRequest(),
-      adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (ad) {
-          _interstitialAd = ad;
-          isInterstitialLoaded = true;
-          _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
-            onAdDismissedFullScreenContent: (ad) {
-              ad.dispose();
-              isInterstitialLoaded = false;
-              loadInterstitialAd();
-            },
-          );
-        },
-        onAdFailedToLoad: (error) {
-          isInterstitialLoaded = false;
-          _interstitialAd = null;
-        },
-      ),
-    );
-  }
-
-  static void showInterstitialAd({Function()? onComplete}) {
-    if (isInterstitialLoaded && _interstitialAd != null) {
-      _interstitialAd!.show();
-    } else {
-      loadInterstitialAd();
-    }
-    if (onComplete != null) onComplete();
-  }
-}`
+    "path": "lib/widgets/ad_banner_widget.dart",
+    "name": "ad_banner_widget.dart",
+    "category": "widgets",
+    "content": "import 'package:flutter/material.dart';\nimport 'package:google_mobile_ads/google_mobile_ads.dart';\nimport '../services/admob_service.dart';\n\nclass AdBannerWidget extends StatefulWidget {\n  final EdgeInsetsGeometry padding;\n\n  const AdBannerWidget({\n    super.key,\n    this.padding = const EdgeInsets.symmetric(vertical: 4.0),\n  });\n\n  @override\n  State<AdBannerWidget> createState() => _AdBannerWidgetState();\n}\n\nclass _AdBannerWidgetState extends State<AdBannerWidget> {\n  BannerAd? _bannerAd;\n  bool _isBannerLoaded = false;\n\n  @override\n  void initState() {\n    super.initState();\n    _loadAd();\n  }\n\n  void _loadAd() {\n    _bannerAd = AdMobService.createBannerAd(\n      onAdLoaded: () {\n        if (mounted) {\n          setState(() {\n            _isBannerLoaded = true;\n          });\n        }\n      },\n      onAdFailed: (error) {\n        if (mounted) {\n          setState(() {\n            _isBannerLoaded = false;\n          });\n        }\n      },\n    );\n    _bannerAd?.load();\n  }\n\n  @override\n  void dispose() {\n    _bannerAd?.dispose();\n    super.dispose();\n  }\n\n  @override\n  Widget build(BuildContext context) {\n    if (!_isBannerLoaded || _bannerAd == null) {\n      // Small unobtrusive placeholder while loading\n      return Container(\n        height: 50,\n        margin: widget.padding,\n        color: const Color(0xFF0F172A),\n        alignment: Alignment.center,\n        child: Row(\n          mainAxisAlignment: MainAxisAlignment.center,\n          children: const [\n            Icon(Icons.ads_click, size: 14, color: Colors.white38),\n            SizedBox(width: 6),\n            Text(\n              'Google AdMob Banner Space (320x50)',\n              style: TextStyle(color: Colors.white38, fontSize: 11),\n            ),\n          ],\n        ),\n      );\n    }\n\n    return Container(\n      alignment: Alignment.center,\n      width: _bannerAd!.size.width.toDouble(),\n      height: _bannerAd!.size.height.toDouble(),\n      margin: widget.padding,\n      child: AdWidget(ad: _bannerAd!),\n    );\n  }\n}\n"
   },
   {
-    path: 'lib/widgets/ad_banner_widget.dart',
-    name: 'ad_banner_widget.dart',
-    category: 'widgets',
-    content: `import 'package:flutter/material.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
-import '../services/admob_service.dart';
-
-class AdBannerWidget extends StatefulWidget {
-  const AdBannerWidget({super.key});
-
-  @override
-  State<AdBannerWidget> createState() => _AdBannerWidgetState();
-}
-
-class _AdBannerWidgetState extends State<AdBannerWidget> {
-  BannerAd? _bannerAd;
-  bool _isBannerLoaded = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _bannerAd = AdMobService.createBannerAd(
-      onAdLoaded: () {
-        if (mounted) setState(() => _isBannerLoaded = true);
-      },
-    );
-    _bannerAd?.load();
-  }
-
-  @override
-  void dispose() {
-    _bannerAd?.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (!_isBannerLoaded || _bannerAd == null) {
-      return Container(
-        height: 50,
-        color: const Color(0xFF0F172A),
-        alignment: Alignment.center,
-        child: const Text('Google AdMob Banner (320x50)', style: TextStyle(color: Colors.white38, fontSize: 11)),
-      );
-    }
-    return SizedBox(
-      width: _bannerAd!.size.width.toDouble(),
-      height: _bannerAd!.size.height.toDouble(),
-      child: AdWidget(ad: _bannerAd!),
-    );
-  }
-}`
+    "path": "lib/screens/home_screen.dart",
+    "name": "home_screen.dart",
+    "category": "screens",
+    "content": "import 'package:flutter/material.dart';\nimport '../models/match_model.dart';\nimport '../models/player_model.dart';\nimport '../services/admob_service.dart';\nimport '../widgets/ad_banner_widget.dart';\nimport 'match_setup_screen.dart';\nimport 'live_scoring_screen.dart';\nimport 'privacy_policy_screen.dart';\nimport 'phase_detail_screen.dart';\n\nclass HomeScreen extends StatefulWidget {\n  const HomeScreen({super.key});\n\n  @override\n  State<HomeScreen> createState() => _HomeScreenState();\n}\n\nclass _HomeScreenState extends State<HomeScreen> {\n  int _currentTabIndex = 0;\n  bool _autoDeleteOldHistory = true;\n  int _selectedTeamIndex = 0; // 0 for Team A, 1 for Team B\n\n  // Default Sample Teams with 11 Players each\n  final List<Player> _teamAPlayers = [\n    Player(id: 'p-a-1', name: 'Zayn Malik', role: PlayerRole.batsman, isCaptain: true),\n    Player(id: 'p-a-2', name: 'Tariq Aziz', role: PlayerRole.batsman, isViceCaptain: true),\n    Player(id: 'p-a-3', name: 'Farhan Saeed', role: PlayerRole.batsman),\n    Player(id: 'p-a-4', name: 'Hamza Bilal', role: PlayerRole.wicketKeeper, isWicketKeeper: true),\n    Player(id: 'p-a-5', name: 'Bilal Khan', role: PlayerRole.batsman),\n    Player(id: 'p-a-6', name: 'Saad Rafiq', role: PlayerRole.allRounder),\n    Player(id: 'p-a-7', name: 'Daniyal Qureshi', role: PlayerRole.allRounder),\n    Player(id: 'p-a-8', name: 'Arshad Nadeem', role: PlayerRole.bowler),\n    Player(id: 'p-a-9', name: 'Umar Riaz', role: PlayerRole.bowler),\n    Player(id: 'p-a-10', name: 'Haris Rauf', role: PlayerRole.bowler),\n    Player(id: 'p-a-11', name: 'Shaheen Shah', role: PlayerRole.bowler),\n  ];\n\n  final List<Player> _teamBPlayers = [\n    Player(id: 'p-b-1', name: 'Babar Azam', role: PlayerRole.batsman, isCaptain: true),\n    Player(id: 'p-b-2', name: 'Rizwan Ahmed', role: PlayerRole.wicketKeeper, isViceCaptain: true, isWicketKeeper: true),\n    Player(id: 'p-b-3', name: 'Fakhar Zaman', role: PlayerRole.batsman),\n    Player(id: 'p-b-4', name: 'Saim Ayub', role: PlayerRole.batsman),\n    Player(id: 'p-b-5', name: 'Iftikhar Ahmed', role: PlayerRole.allRounder),\n    Player(id: 'p-b-6', name: 'Shadab Khan', role: PlayerRole.allRounder),\n    Player(id: 'p-b-7', name: 'Imad Wasim', role: PlayerRole.allRounder),\n    Player(id: 'p-b-8', name: 'Naseem Shah', role: PlayerRole.bowler),\n    Player(id: 'p-b-9', name: 'Mohammad Amir', role: PlayerRole.bowler),\n    Player(id: 'p-b-10', name: 'Abrar Ahmed', role: PlayerRole.bowler),\n    Player(id: 'p-b-11', name: 'Zaman Khan', role: PlayerRole.bowler),\n  ];\n\n  // 15 Complete Phases metadata\n  final List<Map<String, dynamic>> _phasesList = [\n    {\n      'num': 1,\n      'title': 'Match Dashboard',\n      'desc': 'Recent matches, quick play, and hub controls',\n      'icon': Icons.dashboard_outlined,\n      'color': const Color(0xFF008DDA),\n    },\n    {\n      'num': 2,\n      'title': 'Team & Squad Setup',\n      'desc': '11 of 11 player selection, Captains, WK & Lonely Entry',\n      'icon': Icons.groups_outlined,\n      'color': const Color(0xFF41B06E),\n    },\n    {\n      'num': 3,\n      'title': 'Live Scoring Engine',\n      'desc': 'Striker, Non-striker, Bowler, strike rotation & keypad',\n      'icon': Icons.sports_cricket_outlined,\n      'color': const Color(0xFF008DDA),\n    },\n    {\n      'num': 4,\n      'title': 'Live Commentary',\n      'desc': 'Real-time automated ball-by-ball commentary feed',\n      'icon': Icons.mic_none_outlined,\n      'color': const Color(0xFF8B5CF6),\n    },\n    {\n      'num': 5,\n      'title': 'Complete Scorecard',\n      'desc': 'Full batting scorecard, bowling figures & extras summary',\n      'icon': Icons.table_chart_outlined,\n      'color': const Color(0xFF0284C7),\n    },\n    {\n      'num': 6,\n      'title': 'Match Analytics',\n      'desc': 'Run rate comparison, partnerships, boundaries & dots',\n      'icon': Icons.insights_outlined,\n      'color': const Color(0xFF10B981),\n    },\n    {\n      'num': 7,\n      'title': 'Match Predictor',\n      'desc': 'Projected score at current RR, 6.0, 8.0, 10.0, 12.0 RPO',\n      'icon': Icons.auto_graph_outlined,\n      'color': const Color(0xFFF59E0B),\n    },\n    {\n      'num': 8,\n      'title': 'Win Probability',\n      'desc': 'Dynamic real-time winning percentage meter',\n      'icon': Icons.query_stats_outlined,\n      'color': const Color(0xFF06B6D4),\n    },\n    {\n      'num': 9,\n      'title': 'Over-by-Over Charts',\n      'desc': 'Visual Manhattan chart & Worm progression curve',\n      'icon': Icons.bar_chart_outlined,\n      'color': const Color(0xFF6366F1),\n    },\n    {\n      'num': 10,\n      'title': 'Match Result & POTM',\n      'desc': 'Conclusive win summary & Player of the Match awards',\n      'icon': Icons.emoji_events_outlined,\n      'color': const Color(0xFFEAB308),\n    },\n    {\n      'num': 11,\n      'title': 'Match History Folders',\n      'desc': 'Folder archive storage & automatic cache cleanup',\n      'icon': Icons.folder_special_outlined,\n      'color': const Color(0xFF14B8A6),\n    },\n    {\n      'num': 12,\n      'title': 'Scorecard Export',\n      'desc': 'Digital match summary and PDF printable reports',\n      'icon': Icons.picture_as_pdf_outlined,\n      'color': const Color(0xFFEC4899),\n    },\n    {\n      'num': 13,\n      'title': 'Share & Backup',\n      'desc': 'One-tap WhatsApp share and match data backups',\n      'icon': Icons.share_outlined,\n      'color': const Color(0xFF22C55E),\n    },\n    {\n      'num': 14,\n      'title': 'Fireworks & Fanfare',\n      'desc': 'Haptic animations, 4s, 6s, and milestone celebrations',\n      'icon': Icons.celebration_outlined,\n      'color': const Color(0xFFA855F7),\n    },\n    {\n      'num': 15,\n      'title': 'Pure Flutter Engine',\n      'desc': 'Native Flutter 3.x, AdMob smart monetization & Privacy Policy',\n      'icon': Icons.phone_android_outlined,\n      'color': const Color(0xFF38BDF8),\n    },\n  ];\n\n  void _startNewMatchWorkflow() {\n    Navigator.push(\n      context,\n      MaterialPageRoute(\n        builder: (context) => MatchSetupScreen(\n          onStartMatch: (format, totalOvers, teamA, teamB) {\n            Navigator.pushReplacement(\n              context,\n              MaterialPageRoute(\n                builder: (context) => LiveScoringScreen(\n                  teamA: teamA,\n                  teamB: teamB,\n                  totalOvers: totalOvers,\n                ),\n              ),\n            );\n          },\n        ),\n      ),\n    );\n  }\n\n  void _showAddPlayerDialog(int teamIndex) {\n    final controller = TextEditingController();\n    PlayerRole role = PlayerRole.batsman;\n\n    showDialog(\n      context: context,\n      builder: (ctx) => StatefulBuilder(\n        builder: (context, setDialogState) => AlertDialog(\n          backgroundColor: const Color(0xFF1E293B),\n          title: Text(\n            teamIndex == 0 ? 'Add Player to Thunderbolts XI' : 'Add Player to Falcons United',\n            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),\n          ),\n          content: Column(\n            mainAxisSize: MainAxisSize.min,\n            children: [\n              TextField(\n                controller: controller,\n                autofocus: true,\n                style: const TextStyle(color: Colors.white),\n                decoration: InputDecoration(\n                  hintText: 'Enter Player Full Name',\n                  hintStyle: const TextStyle(color: Colors.white54),\n                  filled: true,\n                  fillColor: const Color(0xFF0F172A),\n                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),\n                ),\n              ),\n              const SizedBox(height: 12),\n              DropdownButtonFormField<PlayerRole>(\n                value: role,\n                dropdownColor: const Color(0xFF0F172A),\n                style: const TextStyle(color: Colors.white),\n                decoration: InputDecoration(\n                  labelText: 'Player Role',\n                  labelStyle: const TextStyle(color: Colors.cyanAccent),\n                  filled: true,\n                  fillColor: const Color(0xFF0F172A),\n                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),\n                ),\n                items: PlayerRole.values.map((r) {\n                  return DropdownMenuItem(\n                    value: r,\n                    child: Text(r.name.toUpperCase()),\n                  );\n                }).toList(),\n                onChanged: (val) {\n                  if (val != null) setDialogState(() => role = val);\n                },\n              ),\n            ],\n          ),\n          actions: [\n            TextButton(\n              onPressed: () => Navigator.pop(ctx),\n              child: const Text('Cancel', style: TextStyle(color: Colors.white60)),\n            ),\n            ElevatedButton(\n              onPressed: () {\n                final name = controller.text.trim();\n                if (name.isNotEmpty) {\n                  setState(() {\n                    final targetList = teamIndex == 0 ? _teamAPlayers : _teamBPlayers;\n                    targetList.add(Player(\n                      id: 'p-custom-${DateTime.now().millisecondsSinceEpoch}',\n                      name: name,\n                      role: role,\n                      isCaptain: targetList.isEmpty,\n                      isViceCaptain: targetList.length == 1,\n                    ));\n                  });\n                  Navigator.pop(ctx);\n                  ScaffoldMessenger.of(context).showSnackBar(\n                    SnackBar(content: Text('Player \"$name\" added to squad!'), backgroundColor: Colors.green),\n                  );\n                }\n              },\n              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF008DDA)),\n              child: const Text('Add Player'),\n            ),\n          ],\n        ),\n      ),\n    );\n  }\n\n  @override\n  Widget build(BuildContext context) {\n    return Scaffold(\n      backgroundColor: const Color(0xFF0B192C),\n      drawer: _buildAppDrawer(),\n      appBar: AppBar(\n        backgroundColor: const Color(0xFF1E3E62),\n        elevation: 0,\n        title: Row(\n          children: [\n            Container(\n              padding: const EdgeInsets.all(6),\n              decoration: BoxDecoration(\n                color: Colors.white.withOpacity(0.15),\n                shape: BoxShape.circle,\n              ),\n              child: const Icon(Icons.sports_cricket, color: Colors.cyanAccent, size: 20),\n            ),\n            const SizedBox(width: 10),\n            const Column(\n              crossAxisAlignment: CrossAxisAlignment.start,\n              children: [\n                Text(\n                  'Cricket Scoreboard',\n                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),\n                ),\n                Text(\n                  '15 Phases Complete Engine',\n                  style: TextStyle(fontSize: 10, color: Colors.cyanAccent),\n                ),\n              ],\n            ),\n          ],\n        ),\n        actions: [\n          IconButton(\n            icon: const Icon(Icons.privacy_tip_outlined, color: Colors.cyanAccent),\n            tooltip: 'Phase 15: Privacy Policy',\n            onPressed: () {\n              Navigator.push(\n                context,\n                MaterialPageRoute(builder: (context) => const PrivacyPolicyScreen()),\n              );\n            },\n          ),\n          IconButton(\n            icon: const Icon(Icons.ads_click, color: Colors.white70),\n            tooltip: 'Test AdMob Interstitial',\n            onPressed: () => AdMobService.showInterstitialAd(),\n          ),\n        ],\n      ),\n      body: Column(\n        children: [\n          Expanded(\n            child: IndexedStack(\n              index: _currentTabIndex,\n              children: [\n                _buildHomeDashboardTab(),\n                _buildTeamsAndPlayersTab(),\n                _buildPlayerStatsTab(),\n                _build15PhasesTab(),\n              ],\n            ),\n          ),\n          // Persistent Google AdMob Banner\n          const AdBannerWidget(),\n        ],\n      ),\n      bottomNavigationBar: BottomNavigationBar(\n        currentIndex: _currentTabIndex,\n        onTap: (index) => setState(() => _currentTabIndex = index),\n        backgroundColor: const Color(0xFF1E3E62),\n        selectedItemColor: Colors.cyanAccent,\n        unselectedItemColor: Colors.white60,\n        type: BottomNavigationBarType.fixed,\n        selectedFontSize: 11,\n        unselectedFontSize: 10,\n        items: const [\n          BottomNavigationBarItem(\n            icon: Icon(Icons.home_outlined),\n            activeIcon: Icon(Icons.home),\n            label: 'Matches',\n          ),\n          BottomNavigationBarItem(\n            icon: Icon(Icons.groups_outlined),\n            activeIcon: Icon(Icons.groups),\n            label: 'Players',\n          ),\n          BottomNavigationBarItem(\n            icon: Icon(Icons.leaderboard_outlined),\n            activeIcon: Icon(Icons.leaderboard),\n            label: 'Stats',\n          ),\n          BottomNavigationBarItem(\n            icon: Icon(Icons.layers_outlined),\n            activeIcon: Icon(Icons.layers),\n            label: '15 Phases',\n          ),\n        ],\n      ),\n    );\n  }\n\n  // TAB 0: HOME / MATCHES DASHBOARD\n  Widget _buildHomeDashboardTab() {\n    return SingleChildScrollView(\n      padding: const EdgeInsets.all(16.0),\n      child: Column(\n        crossAxisAlignment: CrossAxisAlignment.stretch,\n        children: [\n          // Hero Cricket Banner with Attractive Graphic\n          _buildHeroBanner(),\n\n          const SizedBox(height: 16),\n\n          // Primary Quick Action Buttons (Matching Preview)\n          Row(\n            children: [\n              Expanded(\n                child: ElevatedButton.icon(\n                  onPressed: _startNewMatchWorkflow,\n                  icon: const Icon(Icons.play_circle_fill, size: 20),\n                  label: const Text('Start Match', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),\n                  style: ElevatedButton.styleFrom(\n                    backgroundColor: const Color(0xFF008DDA),\n                    foregroundColor: Colors.white,\n                    padding: const EdgeInsets.symmetric(vertical: 14),\n                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),\n                    elevation: 4,\n                  ),\n                ),\n              ),\n              const SizedBox(width: 8),\n              Expanded(\n                child: ElevatedButton.icon(\n                  onPressed: () => setState(() => _currentTabIndex = 1),\n                  icon: const Icon(Icons.shield_outlined, size: 20),\n                  label: const Text('Squads (22)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),\n                  style: ElevatedButton.styleFrom(\n                    backgroundColor: const Color(0xFF1E293B),\n                    foregroundColor: Colors.cyanAccent,\n                    padding: const EdgeInsets.symmetric(vertical: 14),\n                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: const BorderSide(color: Colors.white12)),\n                    elevation: 2,\n                  ),\n                ),\n              ),\n              const SizedBox(width: 8),\n              Expanded(\n                child: ElevatedButton.icon(\n                  onPressed: () => setState(() => _currentTabIndex = 2),\n                  icon: const Icon(Icons.emoji_events_outlined, size: 20),\n                  label: const Text('Top Stats', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),\n                  style: ElevatedButton.styleFrom(\n                    backgroundColor: const Color(0xFF1E293B),\n                    foregroundColor: Colors.amberAccent,\n                    padding: const EdgeInsets.symmetric(vertical: 14),\n                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: const BorderSide(color: Colors.white12)),\n                    elevation: 2,\n                  ),\n                ),\n              ),\n            ],\n          ),\n\n          const SizedBox(height: 18),\n\n          // Match Storage Folders Section (Phase 11)\n          _buildHistoryFoldersSection(),\n\n          const SizedBox(height: 18),\n\n          // Quick 15 Phases Access Header\n          Row(\n            mainAxisAlignment: MainAxisAlignment.spaceBetween,\n            children: [\n              Row(\n                children: const [\n                  Icon(Icons.layers, color: Colors.cyanAccent, size: 18),\n                  SizedBox(width: 6),\n                  Text(\n                    '15 PHASES SYSTEM',\n                    style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 0.5),\n                  ),\n                ],\n              ),\n              TextButton(\n                onPressed: () => setState(() => _currentTabIndex = 3),\n                child: const Text('View All (15/15) →', style: TextStyle(color: Colors.cyanAccent, fontSize: 12)),\n              ),\n            ],\n          ),\n\n          const SizedBox(height: 8),\n\n          // Preview of 15 Phases Grid (First 4 Quick Cards)\n          _buildQuickPhasesGrid(),\n\n          const SizedBox(height: 18),\n\n          // Player Rosters Preview Card\n          _buildRostersPreviewCard(),\n\n          const SizedBox(height: 16),\n\n          // AdMob Monetization Overview Card\n          _buildAdMobCard(),\n        ],\n      ),\n    );\n  }\n\n  // TAB 1: TEAMS & PLAYERS SQUAD MANAGER\n  Widget _buildTeamsAndPlayersTab() {\n    final activePlayers = _selectedTeamIndex == 0 ? _teamAPlayers : _teamBPlayers;\n    final activeTeamName = _selectedTeamIndex == 0 ? 'Thunderbolts XI' : 'Falcons United';\n\n    return Column(\n      children: [\n        // Team Selector Header\n        Container(\n          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),\n          color: const Color(0xFF1E293B),\n          child: Row(\n            children: [\n              Expanded(\n                child: ChoiceChip(\n                  label: Text('Thunderbolts XI (${_teamAPlayers.length})'),\n                  selected: _selectedTeamIndex == 0,\n                  onSelected: (selected) => setState(() => _selectedTeamIndex = 0),\n                  selectedColor: const Color(0xFF008DDA),\n                  backgroundColor: const Color(0xFF0F172A),\n                  labelStyle: TextStyle(\n                    color: _selectedTeamIndex == 0 ? Colors.white : Colors.white70,\n                    fontWeight: FontWeight.bold,\n                  ),\n                ),\n              ),\n              const SizedBox(width: 8),\n              Expanded(\n                child: ChoiceChip(\n                  label: Text('Falcons United (${_teamBPlayers.length})'),\n                  selected: _selectedTeamIndex == 1,\n                  onSelected: (selected) => setState(() => _selectedTeamIndex = 1),\n                  selectedColor: const Color(0xFF41B06E),\n                  backgroundColor: const Color(0xFF0F172A),\n                  labelStyle: TextStyle(\n                    color: _selectedTeamIndex == 1 ? Colors.white : Colors.white70,\n                    fontWeight: FontWeight.bold,\n                  ),\n                ),\n              ),\n            ],\n          ),\n        ),\n\n        // Squad Actions & Count Bar\n        Container(\n          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),\n          color: const Color(0xFF0F172A),\n          child: Row(\n            mainAxisAlignment: MainAxisAlignment.spaceBetween,\n            children: [\n              Text(\n                'Squad List • ${activePlayers.length} Players',\n                style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),\n              ),\n              ElevatedButton.icon(\n                onPressed: () => _showAddPlayerDialog(_selectedTeamIndex),\n                icon: const Icon(Icons.person_add, size: 16),\n                label: const Text('Add Player', style: TextStyle(fontSize: 12)),\n                style: ElevatedButton.styleFrom(\n                  backgroundColor: const Color(0xFF008DDA),\n                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),\n                ),\n              ),\n            ],\n          ),\n        ),\n\n        // Players List\n        Expanded(\n          child: ListView.builder(\n            padding: const EdgeInsets.all(12),\n            itemCount: activePlayers.length,\n            itemBuilder: (context, index) {\n              final player = activePlayers[index];\n              return Card(\n                color: const Color(0xFF1E293B),\n                margin: const EdgeInsets.only(bottom: 8),\n                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),\n                child: ListTile(\n                  leading: CircleAvatar(\n                    backgroundColor: _getRoleColor(player.role).withOpacity(0.2),\n                    child: Text(\n                      '${index + 1}',\n                      style: TextStyle(color: _getRoleColor(player.role), fontWeight: FontWeight.bold, fontSize: 13),\n                    ),\n                  ),\n                  title: Row(\n                    children: [\n                      Text(\n                        player.name,\n                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),\n                      ),\n                      const SizedBox(width: 6),\n                      if (player.isCaptain)\n                        _badgeChip('C', Colors.amber),\n                      if (player.isViceCaptain)\n                        _badgeChip('VC', Colors.blueAccent),\n                      if (player.isWicketKeeper)\n                        _badgeChip('WK', Colors.greenAccent),\n                    ],\n                  ),\n                  subtitle: Text(\n                    player.role.name.toUpperCase(),\n                    style: TextStyle(color: _getRoleColor(player.role), fontSize: 11, fontWeight: FontWeight.w600),\n                  ),\n                  trailing: Icon(\n                    _getRoleIcon(player.role),\n                    color: _getRoleColor(player.role),\n                    size: 20,\n                  ),\n                ),\n              );\n            },\n          ),\n        ),\n      ],\n    );\n  }\n\n  // TAB 2: PLAYER STATS & CAREER LEADERBOARD\n  Widget _buildPlayerStatsTab() {\n    final stats = [\n      {'name': 'Zayn Malik', 'team': 'Thunderbolts', 'role': 'Batsman', 'runs': 382, 'hs': '89*', 'sr': 148.5, 'wkts': 0, 'econ': '-'},\n      {'name': 'Babar Azam', 'team': 'Falcons', 'role': 'Batsman', 'runs': 415, 'hs': '104*', 'sr': 139.2, 'wkts': 0, 'econ': '-'},\n      {'name': 'Rizwan Ahmed', 'team': 'Falcons', 'role': 'WK-Bat', 'runs': 340, 'hs': '78', 'sr': 131.0, 'wkts': 0, 'econ': '-'},\n      {'name': 'Shaheen Shah', 'team': 'Thunderbolts', 'role': 'Bowler', 'runs': 45, 'hs': '22*', 'sr': 160.0, 'wkts': 19, 'econ': '6.4'},\n      {'name': 'Haris Rauf', 'team': 'Thunderbolts', 'role': 'Bowler', 'runs': 18, 'hs': '11', 'sr': 120.0, 'wkts': 17, 'econ': '7.2'},\n      {'name': 'Naseem Shah', 'team': 'Falcons', 'role': 'Bowler', 'runs': 32, 'hs': '14*', 'sr': 145.0, 'wkts': 16, 'econ': '6.8'},\n      {'name': 'Shadab Khan', 'team': 'Falcons', 'role': 'All-Rounder', 'runs': 210, 'hs': '52', 'sr': 142.0, 'wkts': 14, 'econ': '7.1'},\n      {'name': 'Saad Rafiq', 'team': 'Thunderbolts', 'role': 'All-Rounder', 'runs': 195, 'hs': '48*', 'sr': 136.0, 'wkts': 12, 'econ': '7.5'},\n    ];\n\n    return ListView(\n      padding: const EdgeInsets.all(16),\n      children: [\n        // Header\n        Container(\n          padding: const EdgeInsets.all(16),\n          decoration: BoxDecoration(\n            gradient: const LinearGradient(\n              colors: [Color(0xFFEAB308), Color(0xFF1E3E62)],\n              begin: Alignment.topLeft,\n              end: Alignment.bottomRight,\n            ),\n            borderRadius: BorderRadius.circular(16),\n          ),\n          child: Column(\n            crossAxisAlignment: CrossAxisAlignment.start,\n            children: const [\n              Text('Career Performance Hub', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),\n              SizedBox(height: 4),\n              Text('Real-time tracked batting averages, wickets, strike rate, and best figures.', style: TextStyle(color: Colors.white70, fontSize: 12)),\n            ],\n          ),\n        ),\n\n        const SizedBox(height: 16),\n\n        const Text('PLAYER LEADERBOARDS & STATS', style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold, fontSize: 13)),\n        const SizedBox(height: 10),\n\n        ...stats.map((s) => Card(\n              color: const Color(0xFF1E293B),\n              margin: const EdgeInsets.only(bottom: 10),\n              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),\n              child: Padding(\n                padding: const EdgeInsets.all(12),\n                child: Row(\n                  children: [\n                    CircleAvatar(\n                      backgroundColor: const Color(0xFF008DDA).withOpacity(0.2),\n                      child: const Icon(Icons.person, color: Colors.cyanAccent),\n                    ),\n                    const SizedBox(width: 12),\n                    Expanded(\n                      child: Column(\n                        crossAxisAlignment: CrossAxisAlignment.start,\n                        children: [\n                          Text(s['name'] as String, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),\n                          Text('${s['team']} • ${s['role']}', style: const TextStyle(color: Colors.white54, fontSize: 11)),\n                        ],\n                      ),\n                    ),\n                    Column(\n                      crossAxisAlignment: CrossAxisAlignment.end,\n                      children: [\n                        Text('${s['runs']} Runs (HS: ${s['hs']})', style: const TextStyle(color: Colors.amberAccent, fontWeight: FontWeight.bold, fontSize: 12)),\n                        Text('SR: ${s['sr']} • Wkts: ${s['wkts']} (Econ: ${s['econ']})', style: const TextStyle(color: Colors.cyanAccent, fontSize: 11)),\n                      ],\n                    ),\n                  ],\n                ),\n              ),\n            )),\n      ],\n    );\n  }\n\n  // TAB 3: COMPLETE 15 PHASES EXPLORER\n  Widget _build15PhasesTab() {\n    return ListView(\n      padding: const EdgeInsets.all(16),\n      children: [\n        // Header\n        Container(\n          padding: const EdgeInsets.all(16),\n          decoration: BoxDecoration(\n            gradient: const LinearGradient(\n              colors: [Color(0xFF008DDA), Color(0xFF1E3E62)],\n              begin: Alignment.topLeft,\n              end: Alignment.bottomRight,\n            ),\n            borderRadius: BorderRadius.circular(16),\n          ),\n          child: Column(\n            crossAxisAlignment: CrossAxisAlignment.start,\n            children: const [\n              Text('Complete 15 Phases Architecture', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),\n              SizedBox(height: 4),\n              Text('Explore and execute each phase individually. From Match Setup to Pure Flutter 3 Engine & Privacy Policy.', style: TextStyle(color: Colors.white70, fontSize: 12)),\n            ],\n          ),\n        ),\n\n        const SizedBox(height: 14),\n\n        ..._phasesList.map((p) => Card(\n              color: const Color(0xFF1E293B),\n              margin: const EdgeInsets.only(bottom: 10),\n              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: (p['color'] as Color).withOpacity(0.2))),\n              child: ListTile(\n                leading: Container(\n                  padding: const EdgeInsets.all(10),\n                  decoration: BoxDecoration(\n                    color: (p['color'] as Color).withOpacity(0.2),\n                    borderRadius: BorderRadius.circular(10),\n                  ),\n                  child: Icon(p['icon'] as IconData, color: p['color'] as Color, size: 22),\n                ),\n                title: Text('Phase ${p['num']}: ${p['title']}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),\n                subtitle: Text(p['desc'] as String, style: const TextStyle(color: Colors.white60, fontSize: 11)),\n                trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white38, size: 14),\n                onTap: () {\n                  if (p['num'] == 2) {\n                    _startNewMatchWorkflow();\n                  } else {\n                    Navigator.push(\n                      context,\n                      MaterialPageRoute(\n                        builder: (context) => PhaseDetailScreen(\n                          phaseNumber: p['num'],\n                          title: p['title'],\n                          subtitle: p['desc'],\n                          icon: p['icon'],\n                          themeColor: p['color'],\n                        ),\n                      ),\n                    );\n                  }\n                },\n              ),\n            )),\n      ],\n    );\n  }\n\n  // WIDGET HELPERS\n  Widget _buildHeroBanner() {\n    return Container(\n      padding: const EdgeInsets.all(18),\n      decoration: BoxDecoration(\n        gradient: const LinearGradient(\n          colors: [Color(0xFF008DDA), Color(0xFF1E3E62)],\n          begin: Alignment.topLeft,\n          end: Alignment.bottomRight,\n        ),\n        borderRadius: BorderRadius.circular(20),\n        boxShadow: [\n          BoxShadow(\n            color: const Color(0xFF008DDA).withOpacity(0.3),\n            blurRadius: 16,\n            offset: const Offset(0, 8),\n          ),\n        ],\n      ),\n      child: Row(\n        children: [\n          // Cricket Icon Graphic\n          Container(\n            padding: const EdgeInsets.all(14),\n            decoration: BoxDecoration(\n              color: Colors.white.withOpacity(0.15),\n              shape: BoxShape.circle,\n              border: Border.all(color: Colors.cyanAccent.withOpacity(0.5), width: 2),\n            ),\n            child: const Icon(Icons.sports_cricket, color: Colors.cyanAccent, size: 36),\n          ),\n          const SizedBox(width: 14),\n          Expanded(\n            child: Column(\n              crossAxisAlignment: CrossAxisAlignment.start,\n              children: [\n                Container(\n                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),\n                  decoration: BoxDecoration(\n                    color: Colors.white.withOpacity(0.2),\n                    borderRadius: BorderRadius.circular(12),\n                  ),\n                  child: const Text(\n                    '15 PHASES INTEGRATED',\n                    style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),\n                  ),\n                ),\n                const SizedBox(height: 6),\n                const Text(\n                  'Cricket Scoreboard Pro',\n                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),\n                ),\n                const SizedBox(height: 4),\n                const Text(\n                  'Real-time striking engine, ball commentary, 22 squad players & AdMob smart monetization.',\n                  style: TextStyle(color: Colors.white70, fontSize: 11, height: 1.3),\n                ),\n              ],\n            ),\n          ),\n        ],\n      ),\n    );\n  }\n\n  Widget _buildHistoryFoldersSection() {\n    return Container(\n      padding: const EdgeInsets.all(14),\n      decoration: BoxDecoration(\n        color: const Color(0xFF1E293B),\n        borderRadius: BorderRadius.circular(16),\n        border: Border.all(color: Colors.white10),\n      ),\n      child: Column(\n        crossAxisAlignment: CrossAxisAlignment.start,\n        children: [\n          Row(\n            mainAxisAlignment: MainAxisAlignment.spaceBetween,\n            children: [\n              Row(\n                children: const [\n                  Icon(Icons.folder_outlined, color: Colors.cyanAccent, size: 18),\n                  SizedBox(width: 8),\n                  Text(\n                    'Phase 11: Match Storage Folders',\n                    style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),\n                  ),\n                ],\n              ),\n              InkWell(\n                onTap: () {\n                  setState(() => _autoDeleteOldHistory = !_autoDeleteOldHistory);\n                  ScaffoldMessenger.of(context).showSnackBar(\n                    SnackBar(\n                      content: Text(_autoDeleteOldHistory ? 'Auto-clean old history enabled.' : 'Auto-clean old history disabled.'),\n                    ),\n                  );\n                },\n                child: Row(\n                  children: [\n                    Icon(\n                      _autoDeleteOldHistory ? Icons.check_box : Icons.check_box_outline_blank,\n                      size: 16,\n                      color: Colors.cyanAccent,\n                    ),\n                    const SizedBox(width: 4),\n                    const Text('Auto-Clean', style: TextStyle(color: Colors.cyanAccent, fontSize: 11)),\n                  ],\n                ),\n              ),\n            ],\n          ),\n          const SizedBox(height: 10),\n          SingleChildScrollView(\n            scrollDirection: Axis.horizontal,\n            child: Row(\n              children: [\n                _folderChip('📁 Completed Matches (8)', Colors.greenAccent),\n                const SizedBox(width: 8),\n                _folderChip('📁 T20 League Cup (4)', Colors.blueAccent),\n                const SizedBox(width: 8),\n                _folderChip('📁 Quick Practice (3)', Colors.orangeAccent),\n              ],\n            ),\n          ),\n        ],\n      ),\n    );\n  }\n\n  Widget _folderChip(String name, Color color) {\n    return Container(\n      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),\n      decoration: BoxDecoration(\n        color: const Color(0xFF0F172A),\n        borderRadius: BorderRadius.circular(10),\n        border: Border.all(color: color.withOpacity(0.3)),\n      ),\n      child: Text(name, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),\n    );\n  }\n\n  Widget _buildQuickPhasesGrid() {\n    return GridView.builder(\n      shrinkWrap: true,\n      physics: const NeverScrollableScrollPhysics(),\n      itemCount: 4,\n      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(\n        crossAxisCount: 2,\n        crossAxisSpacing: 10,\n        mainAxisSpacing: 10,\n        childAspectRatio: 1.45,\n      ),\n      itemBuilder: (context, index) {\n        final item = _phasesList[index];\n        return InkWell(\n          onTap: () {\n            if (item['num'] == 2) {\n              _startNewMatchWorkflow();\n            } else {\n              Navigator.push(\n                context,\n                MaterialPageRoute(\n                  builder: (context) => PhaseDetailScreen(\n                    phaseNumber: item['num'],\n                    title: item['title'],\n                    subtitle: item['desc'],\n                    icon: item['icon'],\n                    themeColor: item['color'],\n                  ),\n                ),\n              );\n            }\n          },\n          borderRadius: BorderRadius.circular(14),\n          child: Container(\n            padding: const EdgeInsets.all(12),\n            decoration: BoxDecoration(\n              color: const Color(0xFF1E293B),\n              borderRadius: BorderRadius.circular(14),\n              border: Border.all(color: (item['color'] as Color).withOpacity(0.2)),\n            ),\n            child: Column(\n              crossAxisAlignment: CrossAxisAlignment.start,\n              mainAxisAlignment: MainAxisAlignment.spaceBetween,\n              children: [\n                Row(\n                  mainAxisAlignment: MainAxisAlignment.spaceBetween,\n                  children: [\n                    Container(\n                      padding: const EdgeInsets.all(6),\n                      decoration: BoxDecoration(\n                        color: (item['color'] as Color).withOpacity(0.2),\n                        borderRadius: BorderRadius.circular(8),\n                      ),\n                      child: Icon(item['icon'] as IconData, size: 18, color: item['color'] as Color),\n                    ),\n                    Text('P${item['num']}', style: TextStyle(color: (item['color'] as Color), fontWeight: FontWeight.bold, fontSize: 11)),\n                  ],\n                ),\n                Text(item['title'], style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold), maxLines: 1),\n                Text(item['desc'], style: const TextStyle(color: Colors.white60, fontSize: 10), maxLines: 1),\n              ],\n            ),\n          ),\n        );\n      },\n    );\n  }\n\n  Widget _buildRostersPreviewCard() {\n    return Container(\n      padding: const EdgeInsets.all(14),\n      decoration: BoxDecoration(\n        color: const Color(0xFF1E293B),\n        borderRadius: BorderRadius.circular(16),\n        border: Border.all(color: Colors.white10),\n      ),\n      child: Column(\n        crossAxisAlignment: CrossAxisAlignment.start,\n        children: [\n          Row(\n            mainAxisAlignment: MainAxisAlignment.spaceBetween,\n            children: [\n              Row(\n                children: const [\n                  Icon(Icons.person_pin_outlined, color: Colors.amber, size: 18),\n                  SizedBox(width: 8),\n                  Text(\n                    'Squads & Players (11 of 11 Each)',\n                    style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),\n                  ),\n                ],\n              ),\n              InkWell(\n                onTap: () => setState(() => _currentTabIndex = 1),\n                child: const Text('Manage →', style: TextStyle(color: Colors.cyanAccent, fontSize: 12)),\n              ),\n            ],\n          ),\n          const SizedBox(height: 8),\n          const Text(\n            '• Thunderbolts XI: Zayn Malik (C), Tariq Aziz (VC), Farhan Saeed, Hamza Bilal (WK), Bilal Khan, etc.\\n• Falcons United: Babar Azam (C), Rizwan Ahmed (WK/VC), Fakhar Zaman, Saim Ayub, etc.',\n            style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.5),\n          ),\n        ],\n      ),\n    );\n  }\n\n  Widget _buildAdMobCard() {\n    return Card(\n      color: const Color(0xFF1E293B),\n      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),\n      child: Padding(\n        padding: const EdgeInsets.all(14.0),\n        child: Column(\n          crossAxisAlignment: CrossAxisAlignment.start,\n          children: [\n            Row(\n              children: const [\n                Icon(Icons.monetization_on, color: Colors.amber, size: 20),\n                SizedBox(width: 8),\n                Text(\n                  'Google AdMob Monetization (Max 8 Ads Cap)',\n                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),\n                ),\n              ],\n            ),\n            const SizedBox(height: 6),\n            const Text(\n              'Active: Bottom Banner (320x50), Interstitial on Over End, and Rewarded Video Ads.',\n              style: TextStyle(color: Colors.white70, fontSize: 11),\n            ),\n            const SizedBox(height: 10),\n            Row(\n              children: [\n                Expanded(\n                  child: OutlinedButton.icon(\n                    onPressed: () => AdMobService.showInterstitialAd(),\n                    icon: const Icon(Icons.fullscreen, size: 16),\n                    label: const Text('Test Interstitial', style: TextStyle(fontSize: 11)),\n                  ),\n                ),\n                const SizedBox(width: 8),\n                Expanded(\n                  child: OutlinedButton.icon(\n                    onPressed: () {\n                      AdMobService.showRewardedAd(\n                        onUserEarnedReward: (r) {\n                          ScaffoldMessenger.of(context).showSnackBar(\n                            const SnackBar(content: Text('Claimed +50 Cricket Pro Coins!')),\n                          );\n                        },\n                      );\n                    },\n                    icon: const Icon(Icons.videocam, size: 16),\n                    label: const Text('Test Rewarded', style: TextStyle(fontSize: 11)),\n                  ),\n                ),\n              ],\n            ),\n          ],\n        ),\n      ),\n    );\n  }\n\n  Widget _badgeChip(String label, Color color) {\n    return Container(\n      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),\n      decoration: BoxDecoration(\n        color: color.withOpacity(0.2),\n        borderRadius: BorderRadius.circular(4),\n        border: Border.all(color: color.withOpacity(0.5)),\n      ),\n      child: Text(\n        label,\n        style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),\n      ),\n    );\n  }\n\n  Color _getRoleColor(PlayerRole role) {\n    switch (role) {\n      case PlayerRole.batsman:\n        return Colors.blueAccent;\n      case PlayerRole.bowler:\n        return Colors.greenAccent;\n      case PlayerRole.allRounder:\n        return Colors.purpleAccent;\n      case PlayerRole.wicketKeeper:\n        return Colors.orangeAccent;\n    }\n  }\n\n  IconData _getRoleIcon(PlayerRole role) {\n    switch (role) {\n      case PlayerRole.batsman:\n        return Icons.sports_cricket;\n      case PlayerRole.bowler:\n        return Icons.sports_baseball;\n      case PlayerRole.allRounder:\n        return Icons.star_half;\n      case PlayerRole.wicketKeeper:\n        return Icons.pan_tool;\n    }\n  }\n\n  Widget _buildAppDrawer() {\n    return Drawer(\n      backgroundColor: const Color(0xFF0F172A),\n      child: ListView(\n        padding: EdgeInsets.zero,\n        children: [\n          DrawerHeader(\n            decoration: const BoxDecoration(\n              gradient: LinearGradient(\n                colors: [Color(0xFF008DDA), Color(0xFF1E3E62)],\n              ),\n            ),\n            child: Column(\n              crossAxisAlignment: CrossAxisAlignment.start,\n              mainAxisAlignment: MainAxisAlignment.end,\n              children: const [\n                Icon(Icons.sports_cricket, color: Colors.cyanAccent, size: 36),\n                SizedBox(height: 8),\n                Text('Cricket Scoreboard Pro', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),\n                Text('15 Phases Complete Architecture', style: TextStyle(color: Colors.cyanAccent, fontSize: 12)),\n              ],\n            ),\n          ),\n          ListTile(\n            leading: const Icon(Icons.home, color: Colors.cyanAccent),\n            title: const Text('Match Hub', style: TextStyle(color: Colors.white)),\n            onTap: () {\n              Navigator.pop(context);\n              setState(() => _currentTabIndex = 0);\n            },\n          ),\n          ListTile(\n            leading: const Icon(Icons.groups, color: Colors.greenAccent),\n            title: const Text('Teams & Squad Players (22)', style: TextStyle(color: Colors.white)),\n            onTap: () {\n              Navigator.pop(context);\n              setState(() => _currentTabIndex = 1);\n            },\n          ),\n          ListTile(\n            leading: const Icon(Icons.leaderboard, color: Colors.amberAccent),\n            title: const Text('Player Career Stats', style: TextStyle(color: Colors.white)),\n            onTap: () {\n              Navigator.pop(context);\n              setState(() => _currentTabIndex = 2);\n            },\n          ),\n          ListTile(\n            leading: const Icon(Icons.layers, color: Colors.purpleAccent),\n            title: const Text('15 Phases Explorer', style: TextStyle(color: Colors.white)),\n            onTap: () {\n              Navigator.pop(context);\n              setState(() => _currentTabIndex = 3);\n            },\n          ),\n          const Divider(color: Colors.white12),\n          ListTile(\n            leading: const Icon(Icons.shield_outlined, color: Colors.cyanAccent, size: 20),\n            title: const Text('Phase 15: Privacy Policy', style: TextStyle(color: Colors.white, fontSize: 13)),\n            onTap: () {\n              Navigator.pop(context);\n              Navigator.push(context, MaterialPageRoute(builder: (c) => const PrivacyPolicyScreen()));\n            },\n          ),\n        ],\n      ),\n    );\n  }\n}\n"
   },
   {
-    path: 'lib/screens/live_scoring_screen.dart',
-    name: 'live_scoring_screen.dart',
-    category: 'screens',
-    content: `import 'package:flutter/material.dart';
-import '../models/match_model.dart';
-import '../services/admob_service.dart';
-import '../widgets/ad_banner_widget.dart';
-
-class LiveScoringScreen extends StatefulWidget {
-  final Team teamA;
-  final Team teamB;
-  final int totalOvers;
-  final int? target;
-
-  const LiveScoringScreen({super.key, required this.teamA, required this.teamB, required this.totalOvers, this.target});
-
-  @override
-  State<LiveScoringScreen> createState() => _LiveScoringScreenState();
-}
-
-class _LiveScoringScreenState extends State<LiveScoringScreen> {
-  int _totalRuns = 0;
-  int _wickets = 0;
-  int _completedOvers = 0;
-  int _ballsInCurrentOver = 0;
-  bool _isMatchCompleted = false;
-  bool _isInningsCompleted = false;
-  String _resultText = '';
-
-  // Max 8 ads cap per match
-  int _matchAdsShown = 0;
-  static const int maxMatchAds = 8;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _triggerAdIfUnderCap(); // AUTOMATIC AD: MATCH START
-    });
-  }
-
-  bool _isMilestoneOver(int completedOvers, int totalOvers) {
-    if (totalOvers <= 5) return false;
-    if (totalOvers <= 10) return completedOvers == 5;
-    final o1 = (totalOvers * 0.25).round();
-    final o2 = (totalOvers * 0.55).round();
-    final o3 = (totalOvers * 0.80).round();
-    return completedOvers == o1 || completedOvers == o2 || completedOvers == o3;
-  }
-
-  void _triggerAdIfUnderCap() {
-    if (_matchAdsShown < maxMatchAds) {
-      _matchAdsShown++;
-      AdMobService.showInterstitialAd();
-    }
-  }
-
-  void _recordBall(int runs, {bool isWicket = false, bool isWide = false}) {
-    // STRICT BLOCK: Never allow ball scoring if match/innings complete or overs limit reached
-    if (_isMatchCompleted || _isInningsCompleted || _completedOvers >= widget.totalOvers) return;
-
-    setState(() {
-      _totalRuns += runs;
-      if (isWicket) _wickets++;
-
-      // Check if target is chased on any delivery
-      if (widget.target != null && _totalRuns >= widget.target!) {
-        _isMatchCompleted = true;
-        _resultText = '\${widget.teamA.name} won by \${10 - _wickets} wickets!';
-        _triggerAdIfUnderCap();
-        return;
-      }
-
-      if (!isWide) {
-        _ballsInCurrentOver++;
-
-        if (_ballsInCurrentOver == 6) {
-          _completedOvers++;
-          _ballsInCurrentOver = 0;
-
-          // Check if total overs reached (e.g. 20.0 overs)
-          if (_completedOvers >= widget.totalOvers || _wickets >= 10) {
-            if (widget.target != null) {
-              _isMatchCompleted = true;
-              if (_totalRuns == widget.target! - 1) {
-                _resultText = 'Match Tied! Both teams scored \$_totalRuns runs.';
-              } else {
-                final runsDefended = widget.target! - 1 - _totalRuns;
-                _resultText = '\${widget.teamB.name} won by \$runsDefended runs!';
-              }
-            } else {
-              _isInningsCompleted = true; // 1st innings complete, stop balls!
-            }
-            _triggerAdIfUnderCap();
-            return;
-          }
-
-          // SMART OVER AD: Only on milestone overs, NOT every over! (Max 8 ads total)
-          if (_isMilestoneOver(_completedOvers, widget.totalOvers)) {
-            _triggerAdIfUnderCap();
-          }
-        }
-      }
-
-      // Check all out during over
-      if (isWicket && _wickets >= 10) {
-        if (widget.target != null) {
-          _isMatchCompleted = true;
-          final runsDefended = widget.target! - 1 - _totalRuns;
-          _resultText = '\${widget.teamB.name} won by \$runsDefended runs!';
-        } else {
-          _isInningsCompleted = true;
-        }
-        _triggerAdIfUnderCap();
-      }
-    });
-  }
-
-  void _startSecondInnings() {
-    _triggerAdIfUnderCap(); // AUTOMATIC AD: 2ND INNINGS START (capped at 8)
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => LiveScoringScreen(
-          teamA: widget.teamB,
-          teamB: widget.teamA,
-          totalOvers: widget.totalOvers,
-          target: _totalRuns + 1,
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('\${widget.teamA.name} vs \${widget.teamB.name}')),
-      body: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            color: const Color(0xFF0F172A),
-            child: Column(
-              children: [
-                Text('Score: \$_totalRuns/\$_wickets (\$_completedOvers.\$_ballsInCurrentOver/\${widget.totalOvers} ov)', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
-                if (widget.target != null)
-                  Text(_totalRuns >= widget.target! ? 'Target Achieved! Match Finished!' : 'Target: \${widget.target} (Need \${widget.target! - _totalRuns} runs in \${(widget.totalOvers * 6) - (_completedOvers * 6 + _ballsInCurrentOver)} balls)', style: const TextStyle(color: Colors.amberAccent)),
-              ],
-            ),
-          ),
-          Expanded(
-            child: _isMatchCompleted
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.emoji_events, size: 64, color: Colors.amber),
-                        const SizedBox(height: 12),
-                        const Text('MATCH CONCLUDED!', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.greenAccent)),
-                        const SizedBox(height: 8),
-                        Text(_resultText, style: const TextStyle(fontSize: 16, color: Colors.white)),
-                        const SizedBox(height: 20),
-                        ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text('Back to Home')),
-                      ],
-                    ),
-                  )
-                : _isInningsCompleted
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.sports_cricket, size: 64, color: Colors.orangeAccent),
-                            const SizedBox(height: 12),
-                            const Text('1ST INNINGS CONCLUDED!', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.orangeAccent)),
-                            const SizedBox(height: 8),
-                            Text('\${widget.teamA.name} scored \$_totalRuns/\$_wickets in \$_completedOvers.\$_ballsInCurrentOver overs', style: const TextStyle(fontSize: 16, color: Colors.white)),
-                            const SizedBox(height: 6),
-                            Text('Target for \${widget.teamB.name}: \${_totalRuns + 1} Runs (\${widget.totalOvers} ov)', style: const TextStyle(fontSize: 16, color: Colors.amber, fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 20),
-                            ElevatedButton.icon(
-                              onPressed: _startSecondInnings,
-                              icon: const Icon(Icons.play_arrow),
-                              label: const Text('Start 2nd Innings (Chase)'),
-                              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
-                            ),
-                          ],
-                        ),
-                      )
-                    : Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        children: [
-                          ElevatedButton(onPressed: () => _recordBall(0), child: const Text('0')),
-                          ElevatedButton(onPressed: () => _recordBall(1), child: const Text('1')),
-                          ElevatedButton(onPressed: () => _recordBall(4), child: const Text('4')),
-                          ElevatedButton(onPressed: () => _recordBall(6), child: const Text('6')),
-                          ElevatedButton(onPressed: () => _recordBall(0, isWicket: true), child: const Text('Wicket')),
-                        ],
-                      ),
-          ),
-          const AdBannerWidget(),
-        ],
-      ),
-    );
-  }
-}`
+    "path": "lib/screens/match_setup_screen.dart",
+    "name": "match_setup_screen.dart",
+    "category": "screens",
+    "content": "import 'package:flutter/material.dart';\nimport '../models/match_model.dart';\nimport '../models/player_model.dart';\nimport '../services/admob_service.dart';\n\nclass MatchSetupScreen extends StatefulWidget {\n  final Function(MatchFormat format, int totalOvers, Team teamA, Team teamB) onStartMatch;\n\n  const MatchSetupScreen({super.key, required this.onStartMatch});\n\n  @override\n  State<MatchSetupScreen> createState() => _MatchSetupScreenState();\n}\n\nclass _MatchSetupScreenState extends State<MatchSetupScreen> {\n  MatchFormat _selectedFormat = MatchFormat.t20;\n  int _totalOvers = 20;\n\n  // Custom Team Names\n  final TextEditingController _teamAController = TextEditingController(text: 'Thunderbolts XI');\n  final TextEditingController _teamBController = TextEditingController(text: 'Falcons United');\n\n  // Lonely Player Addition Controllers\n  final TextEditingController _playerAInputController = TextEditingController();\n  PlayerRole _selectedRoleA = PlayerRole.batsman;\n  final List<Player> _teamAPlayers = [];\n\n  final TextEditingController _playerBInputController = TextEditingController();\n  PlayerRole _selectedRoleB = PlayerRole.batsman;\n  final List<Player> _teamBPlayers = [];\n\n  @override\n  void initState() {\n    super.initState();\n    _fillDefaultSampleRoster();\n  }\n\n  void _fillDefaultSampleRoster() {\n    _teamAPlayers.clear();\n    _teamBPlayers.clear();\n\n    final namesA = [\n      'Zayn Malik', 'Tariq Aziz', 'Farhan Saeed', 'Hamza Bilal',\n      'Bilal Khan', 'Saad Rafiq', 'Daniyal Qureshi', 'Arshad Nadeem',\n      'Umar Riaz', 'Haris Rauf', 'Shaheen Shah'\n    ];\n    for (int i = 0; i < namesA.length; i++) {\n      _teamAPlayers.add(Player(\n        id: 'p-a-$i',\n        name: namesA[i],\n        role: i < 5 ? PlayerRole.batsman : (i < 7 ? PlayerRole.allRounder : PlayerRole.bowler),\n        isCaptain: i == 0,\n        isViceCaptain: i == 1,\n        isWicketKeeper: i == 3,\n      ));\n    }\n\n    final namesB = [\n      'Babar Azam', 'Rizwan Ahmed', 'Fakhar Zaman', 'Saim Ayub',\n      'Iftikhar Ahmed', 'Shadab Khan', 'Imad Wasim', 'Naseem Shah',\n      'Mohammad Amir', 'Abrar Ahmed', 'Zaman Khan'\n    ];\n    for (int i = 0; i < namesB.length; i++) {\n      _teamBPlayers.add(Player(\n        id: 'p-b-$i',\n        name: namesB[i],\n        role: i < 5 ? PlayerRole.batsman : (i < 7 ? PlayerRole.allRounder : PlayerRole.bowler),\n        isCaptain: i == 0,\n        isViceCaptain: i == 1,\n        isWicketKeeper: i == 1,\n      ));\n    }\n  }\n\n  void _addPlayerALonely() {\n    final text = _playerAInputController.text.trim();\n    if (text.isEmpty) return;\n    setState(() {\n      _teamAPlayers.add(Player(\n        id: 'p-a-${DateTime.now().millisecondsSinceEpoch}',\n        name: text,\n        role: _selectedRoleA,\n        isCaptain: _teamAPlayers.isEmpty,\n        isViceCaptain: _teamAPlayers.length == 1,\n        isWicketKeeper: _selectedRoleA == PlayerRole.wicketKeeper,\n      ));\n      _playerAInputController.clear();\n      // Auto-advance role based on player number\n      final nextNum = _teamAPlayers.length;\n      if (nextNum >= 7) _selectedRoleA = PlayerRole.bowler;\n      else if (nextNum >= 5) _selectedRoleA = PlayerRole.allRounder;\n      else _selectedRoleA = PlayerRole.batsman;\n    });\n  }\n\n  void _addPlayerBLonely() {\n    final text = _playerBInputController.text.trim();\n    if (text.isEmpty) return;\n    setState(() {\n      _teamBPlayers.add(Player(\n        id: 'p-b-${DateTime.now().millisecondsSinceEpoch}',\n        name: text,\n        role: _selectedRoleB,\n        isCaptain: _teamBPlayers.isEmpty,\n        isViceCaptain: _teamBPlayers.length == 1,\n        isWicketKeeper: _selectedRoleB == PlayerRole.wicketKeeper,\n      ));\n      _playerBInputController.clear();\n      // Auto-advance role based on player number\n      final nextNum = _teamBPlayers.length;\n      if (nextNum >= 7) _selectedRoleB = PlayerRole.bowler;\n      else if (nextNum >= 5) _selectedRoleB = PlayerRole.allRounder;\n      else _selectedRoleB = PlayerRole.batsman;\n    });\n  }\n\n  void _onFormatChanged(MatchFormat format) {\n    setState(() {\n      _selectedFormat = format;\n      if (format == MatchFormat.t20) _totalOvers = 20;\n      else if (format == MatchFormat.odi) _totalOvers = 50;\n      else if (format == MatchFormat.test) _totalOvers = 90;\n    });\n  }\n\n  @override\n  Widget build(BuildContext context) {\n    return Scaffold(\n      appBar: AppBar(\n        title: const Text('New Match Setup (1-20 Overs & Lonely Players)'),\n      ),\n      body: SingleChildScrollView(\n        padding: const EdgeInsets.all(16.0),\n        child: Column(\n          crossAxisAlignment: CrossAxisAlignment.stretch,\n          children: [\n            // Format Selector: T20, One-Day (ODI), Test, Custom\n            const Text('Match Format & Overs', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),\n            const SizedBox(height: 10),\n            Row(\n              children: [\n                Expanded(\n                  child: ChoiceChip(\n                    label: const Text('T20 (20 ov)'),\n                    selected: _selectedFormat == MatchFormat.t20 && _totalOvers == 20,\n                    onSelected: (_) => _onFormatChanged(MatchFormat.t20),\n                  ),\n                ),\n                const SizedBox(width: 8),\n                Expanded(\n                  child: ChoiceChip(\n                    label: const Text('One-Day (50 ov)'),\n                    selected: _selectedFormat == MatchFormat.odi && _totalOvers == 50,\n                    onSelected: (_) => _onFormatChanged(MatchFormat.odi),\n                  ),\n                ),\n                const SizedBox(width: 8),\n                Expanded(\n                  child: ChoiceChip(\n                    label: const Text('Test (90 ov)'),\n                    selected: _selectedFormat == MatchFormat.test && _totalOvers == 90,\n                    onSelected: (_) => _onFormatChanged(MatchFormat.test),\n                  ),\n                ),\n              ],\n            ),\n            const SizedBox(height: 16),\n\n            // Choice of overs from 1 to 20\n            const Text('Choice of Overs (1 to 20 Overs):', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),\n            const SizedBox(height: 8),\n            Wrap(\n              spacing: 6,\n              runSpacing: 6,\n              children: List.generate(20, (index) {\n                final overNum = index + 1;\n                return ChoiceChip(\n                  label: Text('$overNum'),\n                  selected: _totalOvers == overNum,\n                  onSelected: (_) {\n                    setState(() {\n                      _totalOvers = overNum;\n                      if (overNum == 20) _selectedFormat = MatchFormat.t20;\n                      else _selectedFormat = MatchFormat.custom;\n                    });\n                  },\n                );\n              }),\n            ),\n            const SizedBox(height: 24),\n\n            // Custom Team Names\n            const Text('Custom Team Names', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),\n            const SizedBox(height: 10),\n            TextField(\n              controller: _teamAController,\n              decoration: const InputDecoration(\n                labelText: 'Custom Team A Name',\n                border: OutlineInputBorder(),\n                prefixIcon: Icon(Icons.shield),\n              ),\n            ),\n            const SizedBox(height: 12),\n\n            // Team A Lonely Players Section\n            Row(\n              mainAxisAlignment: MainAxisAlignment.spaceBetween,\n              children: [\n                Text(\n                  'Team A Players (${_teamAPlayers.length} of 11):',\n                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),\n                ),\n                TextButton.icon(\n                  onPressed: () => setState(() => _teamAPlayers.clear()),\n                  icon: const Icon(Icons.delete_sweep, size: 16, color: Colors.redAccent),\n                  label: const Text('Start Lonely (#1)', style: TextStyle(color: Colors.redAccent, fontSize: 12)),\n                ),\n              ],\n            ),\n            Row(\n              children: [\n                Expanded(\n                  child: TextField(\n                    controller: _playerAInputController,\n                    decoration: InputDecoration(\n                      labelText: 'Add Player #${_teamAPlayers.length + 1} Name',\n                      border: const OutlineInputBorder(),\n                      isDense: true,\n                    ),\n                    onSubmitted: (_) => _addPlayerALonely(),\n                  ),\n                ),\n                const SizedBox(width: 8),\n                IconButton.filled(\n                  onPressed: _addPlayerALonely,\n                  icon: const Icon(Icons.add),\n                  tooltip: 'Add Player Lonely',\n                ),\n              ],\n            ),\n            const SizedBox(height: 8),\n            // Numbered list of Team A players\n            Container(\n              height: 120,\n              decoration: BoxDecoration(\n                border: Border.all(color: Colors.white12),\n                borderRadius: BorderRadius.circular(8),\n              ),\n              child: ListView.builder(\n                itemCount: _teamAPlayers.length,\n                itemBuilder: (context, idx) {\n                  final p = _teamAPlayers[idx];\n                  return ListTile(\n                    dense: true,\n                    leading: CircleAvatar(\n                      radius: 12,\n                      child: Text('${idx + 1}', style: const TextStyle(fontSize: 10)),\n                    ),\n                    title: Text(p.name, style: const TextStyle(fontSize: 13)),\n                    subtitle: Text(p.role.name, style: const TextStyle(fontSize: 10)),\n                    trailing: IconButton(\n                      icon: const Icon(Icons.close, size: 16, color: Colors.redAccent),\n                      onPressed: () => setState(() => _teamAPlayers.removeAt(idx)),\n                    ),\n                  );\n                },\n              ),\n            ),\n            const SizedBox(height: 20),\n\n            TextField(\n              controller: _teamBController,\n              decoration: const InputDecoration(\n                labelText: 'Custom Team B Name',\n                border: OutlineInputBorder(),\n                prefixIcon: Icon(Icons.shield_outlined),\n              ),\n            ),\n            const SizedBox(height: 12),\n\n            // Team B Lonely Players Section\n            Row(\n              mainAxisAlignment: MainAxisAlignment.spaceBetween,\n              children: [\n                Text(\n                  'Team B Players (${_teamBPlayers.length} of 11):',\n                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),\n                ),\n                TextButton.icon(\n                  onPressed: () => setState(() => _teamBPlayers.clear()),\n                  icon: const Icon(Icons.delete_sweep, size: 16, color: Colors.redAccent),\n                  label: const Text('Start Lonely (#1)', style: TextStyle(color: Colors.redAccent, fontSize: 12)),\n                ),\n              ],\n            ),\n            Row(\n              children: [\n                Expanded(\n                  child: TextField(\n                    controller: _playerBInputController,\n                    decoration: InputDecoration(\n                      labelText: 'Add Player #${_teamBPlayers.length + 1} Name',\n                      border: const OutlineInputBorder(),\n                      isDense: true,\n                    ),\n                    onSubmitted: (_) => _addPlayerBLonely(),\n                  ),\n                ),\n                const SizedBox(width: 8),\n                IconButton.filled(\n                  onPressed: _addPlayerBLonely,\n                  icon: const Icon(Icons.add),\n                  tooltip: 'Add Player Lonely',\n                ),\n              ],\n            ),\n            const SizedBox(height: 8),\n            // Numbered list of Team B players\n            Container(\n              height: 120,\n              decoration: BoxDecoration(\n                border: Border.all(color: Colors.white12),\n                borderRadius: BorderRadius.circular(8),\n              ),\n              child: ListView.builder(\n                itemCount: _teamBPlayers.length,\n                itemBuilder: (context, idx) {\n                  final p = _teamBPlayers[idx];\n                  return ListTile(\n                    dense: true,\n                    leading: CircleAvatar(\n                      radius: 12,\n                      child: Text('${idx + 1}', style: const TextStyle(fontSize: 10)),\n                    ),\n                    title: Text(p.name, style: const TextStyle(fontSize: 13)),\n                    subtitle: Text(p.role.name, style: const TextStyle(fontSize: 10)),\n                    trailing: IconButton(\n                      icon: const Icon(Icons.close, size: 16, color: Colors.redAccent),\n                      onPressed: () => setState(() => _teamBPlayers.removeAt(idx)),\n                    ),\n                  );\n                },\n              ),\n            ),\n            const SizedBox(height: 24),\n\n            ElevatedButton.icon(\n              onPressed: () {\n                // AUTOMATIC AD AT MATCH START\n                AdMobService.showInterstitialAd();\n\n                final teamA = Team(\n                  id: 'team-a',\n                  name: _teamAController.text.trim(),\n                  shortName: 'TA',\n                  players: _teamAPlayers,\n                  playingXIIds: _teamAPlayers.map((p) => p.id).toList(),\n                );\n                final teamB = Team(\n                  id: 'team-b',\n                  name: _teamBController.text.trim(),\n                  shortName: 'TB',\n                  players: _teamBPlayers,\n                  playingXIIds: _teamBPlayers.map((p) => p.id).toList(),\n                );\n                widget.onStartMatch(_selectedFormat, _totalOvers, teamA, teamB);\n              },\n              icon: const Icon(Icons.sports_cricket),\n              label: Text('Start Match ($_totalOvers Overs)'),\n              style: ElevatedButton.styleFrom(padding: const EdgeInsets.all(16)),\n            ),\n          ],\n        ),\n      ),\n    );\n  }\n}\n"
   },
   {
-    path: 'lib/screens/home_screen.dart',
-    name: 'home_screen.dart',
-    category: 'screens',
-    content: `import 'package:flutter/material.dart';
-import '../services/admob_service.dart';
-import '../widgets/ad_banner_widget.dart';
-import 'match_setup_screen.dart';
-import 'live_scoring_screen.dart';
-
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Cricket Scoreboard')),
-      body: Column(
-        children: [
-          Expanded(
-            child: Center(
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => MatchSetupScreen(
-                        onStartMatch: (format, totalOvers, teamA, teamB) {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => LiveScoringScreen(teamA: teamA, teamB: teamB, totalOvers: totalOvers),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.sports_cricket),
-                label: const Text('Start New Match (1-20 Overs)'),
-              ),
-            ),
-          ),
-          const AdBannerWidget(),
-        ],
-      ),
-    );
-  }
-}`
+    "path": "lib/screens/live_scoring_screen.dart",
+    "name": "live_scoring_screen.dart",
+    "category": "screens",
+    "content": "import 'package:flutter/material.dart';\nimport '../models/match_model.dart';\nimport '../models/player_model.dart';\nimport '../services/admob_service.dart';\nimport '../widgets/ad_banner_widget.dart';\n\nclass LiveScoringScreen extends StatefulWidget {\n  final Team teamA;\n  final Team teamB;\n  final int totalOvers;\n  final int? target; // If 2nd innings run chase\n  final int inningsNumber;\n\n  const LiveScoringScreen({\n    super.key,\n    required this.teamA,\n    required this.teamB,\n    required this.totalOvers,\n    this.target,\n    this.inningsNumber = 1,\n  });\n\n  @override\n  State<LiveScoringScreen> createState() => _LiveScoringScreenState();\n}\n\nclass _LiveScoringScreenState extends State<LiveScoringScreen> {\n  int _totalRuns = 0;\n  int _wickets = 0;\n  int _completedOvers = 0;\n  int _ballsInCurrentOver = 0;\n  final List<String> _currentOverDeliveries = [];\n  final List<CommentaryItem> _commentary = [];\n\n  bool _isMatchCompleted = false;\n  bool _isInningsCompleted = false;\n  int? _secondInningsTarget;\n  String _resultText = '';\n\n  // Max 8 ads cap per match & counter\n  int _matchAdsShown = 0;\n  static const int maxMatchAds = 8;\n\n  // Batsmen & Bowler Tracking\n  late List<BatterScore> _batterScores;\n  late List<BowlerScore> _bowlerScores;\n  int _strikerIndex = 0;\n  int _nonStrikerIndex = 1;\n  int _currentBowlerIndex = 0;\n\n  // Partnership tracking\n  int _partnershipRuns = 0;\n  int _partnershipBalls = 0;\n\n  // Undo history stack\n  final List<Map<String, dynamic>> _historyStack = [];\n\n  @override\n  void initState() {\n    super.initState();\n    _initBattersAndBowlers();\n\n    // AUTOMATIC AD AT MATCH START (if under cap of 8 ads)\n    WidgetsBinding.instance.addPostFrameCallback((_) {\n      _triggerAdIfUnderCap();\n    });\n  }\n\n  void _initBattersAndBowlers() {\n    // Initialize Batters from Team A\n    _batterScores = widget.teamA.players.map((p) {\n      return BatterScore(\n        playerId: p.id,\n        name: p.name + (p.isCaptain ? ' (C)' : (p.isViceCaptain ? ' (VC)' : (p.isWicketKeeper ? ' (WK)' : ''))),\n      );\n    }).toList();\n\n    // Ensure we have at least 2 batters\n    if (_batterScores.length < 2) {\n      _batterScores = [\n        BatterScore(playerId: 'p1', name: 'Opening Batsman 1'),\n        BatterScore(playerId: 'p2', name: 'Opening Batsman 2'),\n      ];\n    }\n    _strikerIndex = 0;\n    _nonStrikerIndex = 1;\n\n    // Initialize Bowlers from Team B\n    _bowlerScores = widget.teamB.players.map((p) {\n      return BowlerScore(\n        playerId: p.id,\n        name: p.name + (p.isCaptain ? ' (C)' : ''),\n      );\n    }).toList();\n\n    if (_bowlerScores.isEmpty) {\n      _bowlerScores = [\n        BowlerScore(playerId: 'b1', name: 'Opening Bowler'),\n      ];\n    }\n    // Set opening bowler to first bowler from Team B (or 8th player if standard bowling unit)\n    _currentBowlerIndex = _bowlerScores.length > 8 ? 8 : 0;\n  }\n\n  void _triggerAdIfUnderCap({VoidCallback? onComplete}) {\n    if (_matchAdsShown < maxMatchAds) {\n      _matchAdsShown++;\n      AdMobService.showInterstitialAd(onComplete: onComplete);\n    } else {\n      if (onComplete != null) onComplete();\n    }\n  }\n\n  void _recordBall(int runs, {bool isWicket = false, bool isWide = false, bool isNoBall = false, bool isLegBye = false, bool isBye = false}) {\n    if (_isMatchCompleted) {\n      ScaffoldMessenger.of(context).showSnackBar(\n        const SnackBar(content: Text('Match is already completed! Target was reached.')),\n      );\n      return;\n    }\n\n    if (_isInningsCompleted || _completedOvers >= widget.totalOvers) {\n      ScaffoldMessenger.of(context).showSnackBar(\n        SnackBar(content: Text('Innings already completed! All ${widget.totalOvers} overs bowled.')),\n      );\n      return;\n    }\n\n    final maxWickets = _batterScores.length > 1 ? _batterScores.length - 1 : 10;\n    if (_wickets >= maxWickets) {\n      ScaffoldMessenger.of(context).showSnackBar(\n        const SnackBar(content: Text('All out! Innings has ended.')),\n      );\n      return;\n    }\n\n    // Save state for Undo\n    _saveStateForUndo();\n\n    setState(() {\n      final isLegalBall = !isWide && !isNoBall;\n      final striker = _batterScores[_strikerIndex];\n      final bowler = _bowlerScores[_currentBowlerIndex];\n\n      _totalRuns += runs;\n      bowler.runsConceded += runs;\n\n      if (isWicket) {\n        _wickets++;\n        bowler.wickets++;\n        striker.balls++;\n        _partnershipBalls++;\n        striker.isOut = true;\n        striker.dismissalText = 'b ${bowler.name}';\n        _currentOverDeliveries.add('W');\n\n        // Add Commentary\n        _commentary.insert(\n          0,\n          CommentaryItem(\n            overBall: '$_completedOvers.${_ballsInCurrentOver + 1}',\n            text: 'WICKET! ${striker.name} is dismissed! Great bowling by ${bowler.name}.',\n            runs: 0,\n            isWicket: true,\n          ),\n        );\n      } else if (isWide) {\n        _currentOverDeliveries.add('Wd');\n        _commentary.insert(\n          0,\n          CommentaryItem(\n            overBall: '$_completedOvers.$_ballsInCurrentOver',\n            text: 'Wide ball bowled by ${bowler.name}. Extra 1 run added.',\n            runs: runs,\n          ),\n        );\n      } else if (isNoBall) {\n        _currentOverDeliveries.add('Nb');\n        _commentary.insert(\n          0,\n          CommentaryItem(\n            overBall: '$_completedOvers.$_ballsInCurrentOver',\n            text: 'NO BALL! Overstepping by ${bowler.name}. Free hit next!',\n            runs: runs,\n          ),\n        );\n      } else {\n        // Legal delivery\n        striker.runs += (isLegBye || isBye) ? 0 : runs;\n        striker.balls++;\n        if (runs == 4) striker.fours++;\n        if (runs == 6) striker.sixes++;\n\n        _partnershipRuns += runs;\n        _partnershipBalls++;\n\n        _currentOverDeliveries.add('$runs');\n\n        String commText = '$runs run${runs == 1 ? '' : 's'} taken by ${striker.name}.';\n        if (runs == 4) commText = 'FOUR! Glorious shot through the covers by ${striker.name}!';\n        if (runs == 6) commText = 'SIX! Colossal strike over deep mid-wicket by ${striker.name}!';\n        if (runs == 0) commText = 'Dot ball. Good defensive push back to ${bowler.name}.';\n\n        _commentary.insert(\n          0,\n          CommentaryItem(\n            overBall: '$_completedOvers.${_ballsInCurrentOver + 1}',\n            text: commText,\n            runs: runs,\n            isBoundary: runs == 4 || runs == 6,\n          ),\n        );\n      }\n\n      // Check Target Reached (2nd innings)\n      if (widget.target != null && _totalRuns >= widget.target!) {\n        _isMatchCompleted = true;\n        final wicketsLeft = maxWickets - _wickets;\n        _resultText = '${widget.teamA.name} won by $wicketsLeft wicket${wicketsLeft == 1 ? '' : 's'}!';\n        _triggerAdIfUnderCap();\n        _showMatchCompletedDialog(_resultText);\n        return;\n      }\n\n      // Legal ball increment\n      if (isLegalBall) {\n        _ballsInCurrentOver++;\n        bowler.ballsInOver++;\n\n        // Rotate Strike on 1, 3, 5 runs\n        if (runs % 2 != 0) {\n          _rotateStrike();\n        }\n\n        // Check if Over Finished (6 legal balls)\n        if (_ballsInCurrentOver >= 6) {\n          _completedOvers++;\n          _ballsInCurrentOver = 0;\n          bowler.overs++;\n          bowler.ballsInOver = 0;\n          _currentOverDeliveries.clear();\n\n          // End of over strike rotation\n          _rotateStrike();\n\n          // Interstitial Ad on Over Finish (under cap of 8)\n          _triggerAdIfUnderCap();\n\n          // Check if total match overs completed\n          if (_completedOvers >= widget.totalOvers || _wickets >= maxWickets) {\n            _handleInningsOrMatchEnd();\n          } else {\n            // Prompt to change bowler\n            _promptChangeBowler();\n          }\n        }\n      }\n\n      // If wicket fell, prompt next batsman\n      if (isWicket && _wickets < maxWickets) {\n        _promptNextBatsman();\n      }\n    });\n  }\n\n  void _rotateStrike() {\n    final temp = _strikerIndex;\n    _strikerIndex = _nonStrikerIndex;\n    _nonStrikerIndex = temp;\n  }\n\n  void _saveStateForUndo() {\n    _historyStack.add({\n      'totalRuns': _totalRuns,\n      'wickets': _wickets,\n      'completedOvers': _completedOvers,\n      'ballsInCurrentOver': _ballsInCurrentOver,\n      'strikerIndex': _strikerIndex,\n      'nonStrikerIndex': _nonStrikerIndex,\n      'currentBowlerIndex': _currentBowlerIndex,\n      'deliveries': List<String>.from(_currentOverDeliveries),\n    });\n    if (_historyStack.length > 10) _historyStack.removeAt(0);\n  }\n\n  void _undoLastBall() {\n    if (_historyStack.isEmpty) {\n      ScaffoldMessenger.of(context).showSnackBar(\n        const SnackBar(content: Text('No previous ball to undo.')),\n      );\n      return;\n    }\n    setState(() {\n      final last = _historyStack.removeLast();\n      _totalRuns = last['totalRuns'];\n      _wickets = last['wickets'];\n      _completedOvers = last['completedOvers'];\n      _ballsInCurrentOver = last['ballsInCurrentOver'];\n      _strikerIndex = last['strikerIndex'];\n      _nonStrikerIndex = last['nonStrikerIndex'];\n      _currentBowlerIndex = last['currentBowlerIndex'];\n      _currentOverDeliveries.clear();\n      _currentOverDeliveries.addAll(List<String>.from(last['deliveries']));\n      if (_commentary.isNotEmpty) _commentary.removeAt(0);\n    });\n    ScaffoldMessenger.of(context).showSnackBar(\n      const SnackBar(content: Text('Last ball undone successfully.')),\n    );\n  }\n\n  void _promptNextBatsman() {\n    // Find next available batsman\n    int nextIdx = -1;\n    for (int i = 0; i < _batterScores.length; i++) {\n      if (i != _strikerIndex && i != _nonStrikerIndex && !_batterScores[i].isOut) {\n        nextIdx = i;\n        break;\n      }\n    }\n    if (nextIdx != -1) {\n      setState(() {\n        _strikerIndex = nextIdx;\n        _partnershipRuns = 0;\n        _partnershipBalls = 0;\n      });\n      ScaffoldMessenger.of(context).showSnackBar(\n        SnackBar(\n          content: Text('New Batsman In: ${_batterScores[nextIdx].name}'),\n          backgroundColor: Colors.blueAccent,\n        ),\n      );\n    }\n  }\n\n  void _promptChangeBowler() {\n    showModalBottomSheet(\n      context: context,\n      backgroundColor: const Color(0xFF1E293B),\n      shape: const RoundedRectangleBorder(\n        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),\n      ),\n      builder: (ctx) {\n        return Container(\n          padding: const EdgeInsets.all(16),\n          child: Column(\n            mainAxisSize: MainAxisSize.min,\n            crossAxisAlignment: CrossAxisAlignment.start,\n            children: [\n              Row(\n                children: const [\n                  Icon(Icons.sports_cricket, color: Colors.cyanAccent),\n                  SizedBox(width: 8),\n                  Text(\n                    'Select Bowler for Next Over',\n                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),\n                  ),\n                ],\n              ),\n              const SizedBox(height: 12),\n              Expanded(\n                child: ListView.builder(\n                  shrinkWrap: true,\n                  itemCount: _bowlerScores.length,\n                  itemBuilder: (c, idx) {\n                    final b = _bowlerScores[idx];\n                    final isCurrent = idx == _currentBowlerIndex;\n                    return ListTile(\n                      tileColor: isCurrent ? Colors.blue.withOpacity(0.2) : null,\n                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),\n                      title: Text(b.name, style: const TextStyle(color: Colors.white)),\n                      subtitle: Text(\n                        'Overs: ${b.overs}.${b.ballsInOver} | Runs: ${b.runsConceded} | Wkts: ${b.wickets}',\n                        style: const TextStyle(color: Colors.white60, fontSize: 12),\n                      ),\n                      trailing: isCurrent ? const Chip(label: Text('Bowled Last Over', style: TextStyle(fontSize: 10))) : null,\n                      onTap: () {\n                        setState(() {\n                          _currentBowlerIndex = idx;\n                        });\n                        Navigator.pop(ctx);\n                      },\n                    );\n                  },\n                ),\n              ),\n            ],\n          ),\n        );\n      },\n    );\n  }\n\n  void _handleInningsOrMatchEnd() {\n    if (widget.target != null) {\n      // 2nd Innings finished\n      _isMatchCompleted = true;\n      if (_totalRuns >= widget.target!) {\n        final wicketsLeft = _batterScores.length - 1 - _wickets;\n        _resultText = '${widget.teamA.name} won by $wicketsLeft wicket${wicketsLeft == 1 ? '' : 's'}!';\n      } else if (_totalRuns == widget.target! - 1) {\n        _resultText = 'Match Tied! Thrilling finish!';\n      } else {\n        final runsDefended = widget.target! - 1 - _totalRuns;\n        _resultText = '${widget.teamB.name} won by $runsDefended run${runsDefended == 1 ? '' : 's'}!';\n      }\n      _triggerAdIfUnderCap();\n      _showMatchCompletedDialog(_resultText);\n    } else {\n      // 1st Innings finished\n      _isInningsCompleted = true;\n      _secondInningsTarget = _totalRuns + 1;\n      _triggerAdIfUnderCap();\n      _showInningsBreakDialog();\n    }\n  }\n\n  void _showMatchCompletedDialog(String result) {\n    showDialog(\n      context: context,\n      barrierDismissible: false,\n      builder: (ctx) => AlertDialog(\n        backgroundColor: const Color(0xFF0F172A),\n        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),\n        title: const Text('🏆 Match Concluded!', style: TextStyle(color: Colors.amber)),\n        content: Column(\n          mainAxisSize: MainAxisSize.min,\n          crossAxisAlignment: CrossAxisAlignment.start,\n          children: [\n            Text(result, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.greenAccent)),\n            const SizedBox(height: 12),\n            Text('Final Score: $_totalRuns/$_wickets in $_completedOvers.$_ballsInCurrentOver overs', style: const TextStyle(color: Colors.white)),\n            if (widget.target != null) Text('Target Was: ${widget.target} runs', style: const TextStyle(color: Colors.white70)),\n          ],\n        ),\n        actions: [\n          TextButton(\n            onPressed: () {\n              Navigator.pop(ctx);\n              _showScorecardModal();\n            },\n            child: const Text('View Scorecard', style: TextStyle(color: Colors.cyanAccent)),\n          ),\n          ElevatedButton(\n            onPressed: () {\n              Navigator.pop(ctx);\n              Navigator.pop(context);\n            },\n            style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),\n            child: const Text('Back to Home'),\n          ),\n        ],\n      ),\n    );\n  }\n\n  void _showInningsBreakDialog() {\n    showDialog(\n      context: context,\n      barrierDismissible: false,\n      builder: (ctx) => AlertDialog(\n        backgroundColor: const Color(0xFF0F172A),\n        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),\n        title: const Text('⏱️ 1st Innings Concluded!', style: TextStyle(color: Colors.orangeAccent)),\n        content: Column(\n          mainAxisSize: MainAxisSize.min,\n          crossAxisAlignment: CrossAxisAlignment.start,\n          children: [\n            Text(\n              '${widget.teamA.name} scored $_totalRuns/$_wickets in $_completedOvers.$_ballsInCurrentOver overs',\n              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),\n            ),\n            const SizedBox(height: 10),\n            Text(\n              'Target for ${widget.teamB.name}: ${_totalRuns + 1} runs in ${widget.totalOvers} overs',\n              style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 15),\n            ),\n          ],\n        ),\n        actions: [\n          ElevatedButton(\n            onPressed: () {\n              Navigator.pop(ctx);\n              _startSecondInnings();\n            },\n            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),\n            child: const Text('Start 2nd Innings (Chase) &rarr;'),\n          ),\n        ],\n      ),\n    );\n  }\n\n  void _startSecondInnings() {\n    _triggerAdIfUnderCap();\n    Navigator.pushReplacement(\n      context,\n      MaterialPageRoute(\n        builder: (_) => LiveScoringScreen(\n          teamA: widget.teamB,\n          teamB: widget.teamA,\n          totalOvers: widget.totalOvers,\n          target: _secondInningsTarget ?? (_totalRuns + 1),\n          inningsNumber: 2,\n        ),\n      ),\n    );\n  }\n\n  @override\n  Widget build(BuildContext context) {\n    final runRate = _completedOvers + (_ballsInCurrentOver / 6.0) > 0\n        ? (_totalRuns / (_completedOvers + (_ballsInCurrentOver / 6.0))).toStringAsFixed(2)\n        : '0.00';\n\n    final ballsLeft = (widget.totalOvers * 6) - (_completedOvers * 6 + _ballsInCurrentOver);\n    final runsNeeded = widget.target != null ? widget.target! - _totalRuns : null;\n\n    final striker = _batterScores[_strikerIndex];\n    final nonStriker = _batterScores[_nonStrikerIndex];\n    final bowler = _bowlerScores[_currentBowlerIndex];\n\n    return Scaffold(\n      backgroundColor: const Color(0xFF0B192C),\n      appBar: AppBar(\n        backgroundColor: const Color(0xFF1E3E62),\n        elevation: 0,\n        title: Column(\n          crossAxisAlignment: CrossAxisAlignment.start,\n          children: [\n            Text(\n              '${widget.teamA.name} vs ${widget.teamB.name}',\n              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),\n            ),\n            Text(\n              'Phase 3: Live Scoring Engine • ${widget.target != null ? \"2nd Innings\" : \"1st Innings\"}',\n              style: const TextStyle(fontSize: 11, color: Colors.cyanAccent),\n            ),\n          ],\n        ),\n        actions: [\n          IconButton(\n            icon: const Icon(Icons.table_chart_outlined),\n            tooltip: 'Phase 5: Scorecard',\n            onPressed: _showScorecardModal,\n          ),\n          IconButton(\n            icon: const Icon(Icons.mic_none_outlined),\n            tooltip: 'Phase 4: Commentary',\n            onPressed: _showCommentaryModal,\n          ),\n          IconButton(\n            icon: const Icon(Icons.undo),\n            tooltip: 'Undo Ball',\n            onPressed: _undoLastBall,\n          ),\n        ],\n      ),\n      body: Column(\n        children: [\n          Expanded(\n            child: SingleChildScrollView(\n              padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 10.0),\n              child: Column(\n                crossAxisAlignment: CrossAxisAlignment.stretch,\n                children: [\n                  // Main Score Banner\n                  _buildMainScoreBanner(runRate, runsNeeded, ballsLeft),\n\n                  const SizedBox(height: 12),\n\n                  // Batsmen Section (Striker & Non-Striker with Players Names!)\n                  _buildBatsmenSection(striker, nonStriker),\n\n                  const SizedBox(height: 10),\n\n                  // Current Bowler Card\n                  _buildBowlerSection(bowler),\n\n                  const SizedBox(height: 10),\n\n                  // Current Over Timeline\n                  _buildOverTimeline(),\n\n                  const SizedBox(height: 12),\n\n                  // 15 Phases Quick Access Ribbon\n                  _buildPhasesRibbon(),\n\n                  const SizedBox(height: 14),\n\n                  // Scoring Keypad\n                  _buildScoringKeypad(),\n                ],\n              ),\n            ),\n          ),\n\n          // Google AdMob Persistent Banner at Bottom\n          const AdBannerWidget(),\n        ],\n      ),\n    );\n  }\n\n  Widget _buildMainScoreBanner(String runRate, int? runsNeeded, int ballsLeft) {\n    return Container(\n      padding: const EdgeInsets.all(16),\n      decoration: BoxDecoration(\n        gradient: const LinearGradient(\n          colors: [Color(0xFF1E3E62), Color(0xFF0F172A)],\n          begin: Alignment.topLeft,\n          end: Alignment.bottomRight,\n        ),\n        borderRadius: BorderRadius.circular(18),\n        border: Border.all(color: Colors.blueAccent.withOpacity(0.3)),\n      ),\n      child: Column(\n        children: [\n          Row(\n            mainAxisAlignment: MainAxisAlignment.spaceBetween,\n            children: [\n              Text(\n                '${widget.teamA.name} BATTING',\n                style: const TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold, fontSize: 13),\n              ),\n              Container(\n                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),\n                decoration: BoxDecoration(\n                  color: Colors.blueAccent.withOpacity(0.2),\n                  borderRadius: BorderRadius.circular(8),\n                ),\n                child: Text(\n                  'Overs: $_completedOvers.$_ballsInCurrentOver / ${widget.totalOvers}',\n                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),\n                ),\n              ),\n            ],\n          ),\n          const SizedBox(height: 8),\n          Row(\n            mainAxisAlignment: MainAxisAlignment.center,\n            crossAxisAlignment: CrossAxisAlignment.baseline,\n            textBaseline: TextBaseline.alphabetic,\n            children: [\n              Text(\n                '$_totalRuns/$_wickets',\n                style: const TextStyle(fontSize: 48, fontWeight: FontWeight.black, color: Colors.white),\n              ),\n              const SizedBox(width: 12),\n              Text(\n                '($_completedOvers.$_ballsInCurrentOver ov)',\n                style: const TextStyle(fontSize: 18, color: Colors.cyanAccent, fontWeight: FontWeight.bold),\n              ),\n            ],\n          ),\n          const SizedBox(height: 6),\n          if (runsNeeded != null) ...[\n            Text(\n              runsNeeded <= 0 ? 'Target Achieved!' : 'Need $runsNeeded runs from $ballsLeft balls',\n              style: TextStyle(\n                color: runsNeeded <= 0 ? Colors.greenAccent : Colors.amberAccent,\n                fontWeight: FontWeight.bold,\n                fontSize: 13,\n              ),\n            ),\n          ] else ...[\n            Row(\n              mainAxisAlignment: MainAxisAlignment.center,\n              children: [\n                Text('CRR: $runRate', style: const TextStyle(color: Colors.white70, fontSize: 12)),\n                const SizedBox(width: 16),\n                Text('Partnership: $_partnershipRuns ($_partnershipBalls)', style: const TextStyle(color: Colors.white70, fontSize: 12)),\n              ],\n            ),\n          ],\n        ],\n      ),\n    );\n  }\n\n  Widget _buildBatsmenSection(BatterScore striker, BatterScore nonStriker) {\n    return Container(\n      padding: const EdgeInsets.all(12),\n      decoration: BoxDecoration(\n        color: const Color(0xFF1E293B),\n        borderRadius: BorderRadius.circular(16),\n        border: Border.all(color: Colors.white12),\n      ),\n      child: Column(\n        crossAxisAlignment: CrossAxisAlignment.start,\n        children: [\n          Row(\n            mainAxisAlignment: MainAxisAlignment.spaceBetween,\n            children: [\n              Row(\n                children: const [\n                  Icon(Icons.sports_cricket, color: Colors.amber, size: 16),\n                  SizedBox(width: 6),\n                  Text('BATSMEN AT CREASE', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),\n                ],\n              ),\n              TextButton.icon(\n                onPressed: () {\n                  setState(() => _rotateStrike());\n                },\n                icon: const Icon(Icons.swap_horiz, size: 16, color: Colors.cyanAccent),\n                label: const Text('Swap Strike', style: TextStyle(color: Colors.cyanAccent, fontSize: 11)),\n                style: TextButton.styleFrom(padding: EdgeInsets.zero, visualDensity: VisualDensity.compact),\n              ),\n            ],\n          ),\n          const SizedBox(height: 6),\n\n          // Striker Card\n          Container(\n            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),\n            decoration: BoxDecoration(\n              color: const Color(0xFF0F172A),\n              borderRadius: BorderRadius.circular(10),\n              border: Border.all(color: Colors.cyanAccent.withOpacity(0.5)),\n            ),\n            child: Row(\n              children: [\n                Container(\n                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),\n                  decoration: BoxDecoration(\n                    color: Colors.amber,\n                    borderRadius: BorderRadius.circular(6),\n                  ),\n                  child: const Text('★ STRIKE', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 9)),\n                ),\n                const SizedBox(width: 8),\n                Expanded(\n                  child: Text(\n                    striker.name,\n                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),\n                    overflow: TextOverflow.ellipsis,\n                  ),\n                ),\n                Text(\n                  '${striker.runs}* (${striker.balls})',\n                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),\n                ),\n                const SizedBox(width: 8),\n                Text(\n                  '${striker.fours}x4 ${striker.sixes}x6',\n                  style: const TextStyle(color: Colors.white60, fontSize: 11),\n                ),\n                const SizedBox(width: 8),\n                Text(\n                  'SR: ${striker.strikeRate.toStringAsFixed(1)}',\n                  style: const TextStyle(color: Colors.cyanAccent, fontSize: 11),\n                ),\n              ],\n            ),\n          ),\n\n          const SizedBox(height: 6),\n\n          // Non-Striker Card\n          Container(\n            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),\n            decoration: BoxDecoration(\n              color: const Color(0xFF0F172A),\n              borderRadius: BorderRadius.circular(10),\n              border: Border.all(color: Colors.white12),\n            ),\n            child: Row(\n              children: [\n                const SizedBox(width: 6),\n                const Icon(Icons.person_outline, size: 14, color: Colors.white38),\n                const SizedBox(width: 6),\n                Expanded(\n                  child: Text(\n                    nonStriker.name,\n                    style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w600, fontSize: 13),\n                    overflow: TextOverflow.ellipsis,\n                  ),\n                ),\n                Text(\n                  '${nonStriker.runs} (${nonStriker.balls})',\n                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),\n                ),\n                const SizedBox(width: 8),\n                Text(\n                  '${nonStriker.fours}x4 ${nonStriker.sixes}x6',\n                  style: const TextStyle(color: Colors.white60, fontSize: 11),\n                ),\n                const SizedBox(width: 8),\n                Text(\n                  'SR: ${nonStriker.strikeRate.toStringAsFixed(1)}',\n                  style: const TextStyle(color: Colors.cyanAccent, fontSize: 11),\n                ),\n              ],\n            ),\n          ),\n        ],\n      ),\n    );\n  }\n\n  Widget _buildBowlerSection(BowlerScore bowler) {\n    return Container(\n      padding: const EdgeInsets.all(12),\n      decoration: BoxDecoration(\n        color: const Color(0xFF1E293B),\n        borderRadius: BorderRadius.circular(16),\n        border: Border.all(color: Colors.white12),\n      ),\n      child: Row(\n        children: [\n          Container(\n            padding: const EdgeInsets.all(8),\n            decoration: BoxDecoration(\n              color: Colors.redAccent.withOpacity(0.15),\n              borderRadius: BorderRadius.circular(10),\n            ),\n            child: const Icon(Icons.sports_baseball, color: Colors.redAccent, size: 20),\n          ),\n          const SizedBox(width: 10),\n          Expanded(\n            child: Column(\n              crossAxisAlignment: CrossAxisAlignment.start,\n              children: [\n                Row(\n                  children: [\n                    Expanded(\n                      child: Text(\n                        bowler.name,\n                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),\n                        overflow: TextOverflow.ellipsis,\n                      ),\n                    ),\n                    InkWell(\n                      onTap: _promptChangeBowler,\n                      child: Container(\n                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),\n                        decoration: BoxDecoration(\n                          color: Colors.blueAccent.withOpacity(0.2),\n                          borderRadius: BorderRadius.circular(6),\n                        ),\n                        child: const Text('Change 🔄', style: TextStyle(color: Colors.cyanAccent, fontSize: 10)),\n                      ),\n                    ),\n                  ],\n                ),\n                const SizedBox(height: 4),\n                Text(\n                  'Overs: ${bowler.overs}.${bowler.ballsInOver} | Maidens: ${bowler.maidens} | Runs: ${bowler.runsConceded} | Wkts: ${bowler.wickets} | Econ: ${bowler.economy.toStringAsFixed(1)}',\n                  style: const TextStyle(color: Colors.white70, fontSize: 11),\n                ),\n              ],\n            ),\n          ),\n        ],\n      ),\n    );\n  }\n\n  Widget _buildOverTimeline() {\n    return Container(\n      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),\n      decoration: BoxDecoration(\n        color: const Color(0xFF1E293B),\n        borderRadius: BorderRadius.circular(12),\n      ),\n      child: Row(\n        children: [\n          const Text('This Over: ', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),\n          const SizedBox(width: 8),\n          Expanded(\n            child: _currentOverDeliveries.isEmpty\n                ? const Text('New over beginning...', style: TextStyle(color: Colors.white38, fontSize: 11))\n                : Row(\n                    children: _currentOverDeliveries.map((b) {\n                      final isW = b == 'W';\n                      final isBoundary = b == '4' || b == '6';\n                      Color c = Colors.blueGrey;\n                      if (isW) c = Colors.redAccent;\n                      else if (b == '4') c = Colors.blueAccent;\n                      else if (b == '6') c = Colors.purpleAccent;\n                      else if (b == 'Wd' || b == 'Nb') c = Colors.amber;\n\n                      return Container(\n                        margin: const EdgeInsets.symmetric(horizontal: 3),\n                        width: 26,\n                        height: 26,\n                        decoration: BoxDecoration(\n                          shape: BoxShape.circle,\n                          color: c,\n                        ),\n                        alignment: Alignment.center,\n                        child: Text(\n                          b,\n                          style: TextStyle(\n                            color: isW || isBoundary ? Colors.white : Colors.black,\n                            fontWeight: FontWeight.bold,\n                            fontSize: 10,\n                          ),\n                        ),\n                      );\n                    }).toList(),\n                  ),\n          ),\n        ],\n      ),\n    );\n  }\n\n  Widget _buildPhasesRibbon() {\n    return SingleChildScrollView(\n      scrollDirection: Axis.horizontal,\n      child: Row(\n        children: [\n          _phasePill('Phase 5: Scorecard', Icons.table_chart, _showScorecardModal, Colors.blueAccent),\n          _phasePill('Phase 4: Commentary', Icons.mic, _showCommentaryModal, Colors.emeraldAccent),\n          _phasePill('Phase 6: Analytics', Icons.insights, _showAnalyticsModal, Colors.purpleAccent),\n          _phasePill('Phase 7: Predictor', Icons.auto_graph, _showPredictorModal, Colors.orangeAccent),\n          _phasePill('Phase 8: Win Prob', Icons.query_stats, _showWinProbModal, Colors.cyanAccent),\n        ],\n      ),\n    );\n  }\n\n  Widget _phasePill(String label, IconData icon, VoidCallback onTap, Color color) {\n    return Padding(\n      padding: const EdgeInsets.only(right: 8.0),\n      child: InkWell(\n        onTap: onTap,\n        borderRadius: BorderRadius.circular(20),\n        child: Container(\n          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),\n          decoration: BoxDecoration(\n            color: const Color(0xFF1E293B),\n            borderRadius: BorderRadius.circular(20),\n            border: Border.all(color: Colors.white12),\n          ),\n          child: Row(\n            children: [\n              Icon(icon, size: 14, color: Colors.cyanAccent),\n              const SizedBox(width: 6),\n              Text(label, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),\n            ],\n          ),\n        ),\n      ),\n    );\n  }\n\n  Widget _buildScoringKeypad() {\n    return GridView.count(\n      crossAxisCount: 4,\n      shrinkWrap: true,\n      physics: const NeverScrollableScrollPhysics(),\n      mainAxisSpacing: 8,\n      crossAxisSpacing: 8,\n      childAspectRatio: 1.5,\n      children: [\n        _padButton('0', () => _recordBall(0)),\n        _padButton('1', () => _recordBall(1)),\n        _padButton('2', () => _recordBall(2)),\n        _padButton('3', () => _recordBall(3)),\n        _padButton('4', () => _recordBall(4), color: const Color(0xFF008DDA)),\n        _padButton('6', () => _recordBall(6), color: const Color(0xFF8B5CF6)),\n        _padButton('Wicket', () => _recordBall(0, isWicket: true), color: const Color(0xFFEF4444)),\n        _padButton('Wide +1', () => _recordBall(1, isWide: true), color: const Color(0xFFF59E0B)),\n        _padButton('No Ball +1', () => _recordBall(1, isNoBall: true), color: const Color(0xFFF97316)),\n        _padButton('Leg Bye +1', () => _recordBall(1, isLegBye: true), color: const Color(0xFF64748B)),\n        _padButton('Over End', () {\n          AdMobService.showInterstitialAd();\n        }, color: const Color(0xFF0D9488)),\n        _padButton('Reward Ad', () {\n          AdMobService.showRewardedAd(\n            onUserEarnedReward: (r) {\n              ScaffoldMessenger.of(context).showSnackBar(\n                const SnackBar(content: Text('Claimed +100 Cricket Pro Coins!')),\n              );\n            },\n          );\n        }, color: const Color(0xFF10B981)),\n      ],\n    );\n  }\n\n  Widget _padButton(String label, VoidCallback onTap, {Color? color}) {\n    return ElevatedButton(\n      style: ElevatedButton.styleFrom(\n        backgroundColor: color ?? const Color(0xFF1E293B),\n        foregroundColor: Colors.white,\n        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),\n        padding: EdgeInsets.zero,\n      ),\n      onPressed: onTap,\n      child: Text(\n        label,\n        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),\n        textAlign: TextAlign.center,\n      ),\n    );\n  }\n\n  // Phase 5: Scorecard Sheet\n  void _showScorecardModal() {\n    showModalBottomSheet(\n      context: context,\n      isScrollControlled: true,\n      backgroundColor: const Color(0xFF0F172A),\n      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),\n      builder: (ctx) {\n        return DraggableScrollableSheet(\n          expand: false,\n          initialChildSize: 0.85,\n          maxChildSize: 0.95,\n          minChildSize: 0.5,\n          builder: (_, controller) {\n            return ListView(\n              controller: controller,\n              padding: const EdgeInsets.all(16),\n              children: [\n                Row(\n                  mainAxisAlignment: MainAxisAlignment.spaceBetween,\n                  children: [\n                    const Text('PHASE 5: FULL MATCH SCORECARD', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),\n                    IconButton(icon: const Icon(Icons.close, color: Colors.white54), onPressed: () => Navigator.pop(ctx)),\n                  ],\n                ),\n                const Divider(color: Colors.white24),\n                Text('${widget.teamA.name} Batting Card', style: const TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold, fontSize: 14)),\n                const SizedBox(height: 8),\n                Table(\n                  columnWidths: const {\n                    0: FlexColumnWidth(4),\n                    1: FlexColumnWidth(1.2),\n                    2: FlexColumnWidth(1.2),\n                    3: FlexColumnWidth(1.2),\n                    4: FlexColumnWidth(1.5),\n                  },\n                  children: [\n                    const TableRow(\n                      children: [\n                        Text('Batter', style: TextStyle(color: Colors.white60, fontWeight: FontWeight.bold, fontSize: 12)),\n                        Text('R', style: TextStyle(color: Colors.white60, fontWeight: FontWeight.bold, fontSize: 12)),\n                        Text('B', style: TextStyle(color: Colors.white60, fontWeight: FontWeight.bold, fontSize: 12)),\n                        Text('4s', style: TextStyle(color: Colors.white60, fontWeight: FontWeight.bold, fontSize: 12)),\n                        Text('SR', style: TextStyle(color: Colors.white60, fontWeight: FontWeight.bold, fontSize: 12)),\n                      ],\n                    ),\n                    ..._batterScores.map((b) => TableRow(\n                          children: [\n                            Padding(\n                              padding: const EdgeInsets.symmetric(vertical: 4),\n                              child: Text(b.name, style: TextStyle(color: b.isOut ? Colors.white38 : Colors.white, fontSize: 12)),\n                            ),\n                            Padding(\n                              padding: const EdgeInsets.symmetric(vertical: 4),\n                              child: Text('${b.runs}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),\n                            ),\n                            Padding(\n                              padding: const EdgeInsets.symmetric(vertical: 4),\n                              child: Text('${b.balls}', style: const TextStyle(color: Colors.white70, fontSize: 12)),\n                            ),\n                            Padding(\n                              padding: const EdgeInsets.symmetric(vertical: 4),\n                              child: Text('${b.fours}', style: const TextStyle(color: Colors.white70, fontSize: 12)),\n                            ),\n                            Padding(\n                              padding: const EdgeInsets.symmetric(vertical: 4),\n                              child: Text(b.strikeRate.toStringAsFixed(1), style: const TextStyle(color: Colors.cyanAccent, fontSize: 12)),\n                            ),\n                          ],\n                        )),\n                  ],\n                ),\n                const SizedBox(height: 20),\n                Text('${widget.teamB.name} Bowling Figures', style: const TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold, fontSize: 14)),\n                const SizedBox(height: 8),\n                Table(\n                  columnWidths: const {\n                    0: FlexColumnWidth(4),\n                    1: FlexColumnWidth(1.2),\n                    2: FlexColumnWidth(1.2),\n                    3: FlexColumnWidth(1.2),\n                    4: FlexColumnWidth(1.5),\n                  },\n                  children: [\n                    const TableRow(\n                      children: [\n                        Text('Bowler', style: TextStyle(color: Colors.white60, fontWeight: FontWeight.bold, fontSize: 12)),\n                        Text('O', style: TextStyle(color: Colors.white60, fontWeight: FontWeight.bold, fontSize: 12)),\n                        Text('M', style: TextStyle(color: Colors.white60, fontWeight: FontWeight.bold, fontSize: 12)),\n                        Text('R', style: TextStyle(color: Colors.white60, fontWeight: FontWeight.bold, fontSize: 12)),\n                        Text('W', style: TextStyle(color: Colors.white60, fontWeight: FontWeight.bold, fontSize: 12)),\n                      ],\n                    ),\n                    ..._bowlerScores.where((bw) => bw.overs > 0 || bw.ballsInOver > 0).map((b) => TableRow(\n                          children: [\n                            Padding(\n                              padding: const EdgeInsets.symmetric(vertical: 4),\n                              child: Text(b.name, style: const TextStyle(color: Colors.white, fontSize: 12)),\n                            ),\n                            Padding(\n                              padding: const EdgeInsets.symmetric(vertical: 4),\n                              child: Text('${b.overs}.${b.ballsInOver}', style: const TextStyle(color: Colors.white, fontSize: 12)),\n                            ),\n                            Padding(\n                              padding: const EdgeInsets.symmetric(vertical: 4),\n                              child: Text('${b.maidens}', style: const TextStyle(color: Colors.white70, fontSize: 12)),\n                            ),\n                            Padding(\n                              padding: const EdgeInsets.symmetric(vertical: 4),\n                              child: Text('${b.runsConceded}', style: const TextStyle(color: Colors.white70, fontSize: 12)),\n                            ),\n                            Padding(\n                              padding: const EdgeInsets.symmetric(vertical: 4),\n                              child: Text('${b.wickets}', style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 12)),\n                            ),\n                          ],\n                        )),\n                  ],\n                ),\n              ],\n            );\n          },\n        );\n      },\n    );\n  }\n\n  // Phase 4: Commentary Modal\n  void _showCommentaryModal() {\n    showModalBottomSheet(\n      context: context,\n      isScrollControlled: true,\n      backgroundColor: const Color(0xFF0F172A),\n      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),\n      builder: (ctx) {\n        return Container(\n          padding: const EdgeInsets.all(16),\n          height: 450,\n          child: Column(\n            crossAxisAlignment: CrossAxisAlignment.start,\n            children: [\n              Row(\n                mainAxisAlignment: MainAxisAlignment.spaceBetween,\n                children: const [\n                  Text('PHASE 4: LIVE COMMENTARY FEED', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),\n                ],\n              ),\n              const Divider(color: Colors.white24),\n              Expanded(\n                child: _commentary.isEmpty\n                    ? const Center(child: Text('Commentary begins on first ball.', style: TextStyle(color: Colors.white38)))\n                    : ListView.builder(\n                        itemCount: _commentary.length,\n                        itemBuilder: (_, idx) {\n                          final c = _commentary[idx];\n                          return Container(\n                            margin: const EdgeInsets.only(bottom: 8),\n                            padding: const EdgeInsets.all(10),\n                            decoration: BoxDecoration(\n                              color: const Color(0xFF1E293B),\n                              borderRadius: BorderRadius.circular(10),\n                            ),\n                            child: Row(\n                              crossAxisAlignment: CrossAxisAlignment.start,\n                              children: [\n                                Container(\n                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),\n                                  decoration: BoxDecoration(\n                                    color: c.isWicket ? Colors.redAccent : (c.isBoundary ? Colors.purpleAccent : Colors.blueAccent),\n                                    borderRadius: BorderRadius.circular(6),\n                                  ),\n                                  child: Text(c.overBall, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),\n                                ),\n                                const SizedBox(width: 10),\n                                Expanded(\n                                  child: Text(c.text, style: const TextStyle(color: Colors.white70, fontSize: 12)),\n                                ),\n                              ],\n                            ),\n                          );\n                        },\n                      ),\n              ),\n            ],\n          ),\n        );\n      },\n    );\n  }\n\n  void _showAnalyticsModal() {\n    showModalBottomSheet(\n      context: context,\n      backgroundColor: const Color(0xFF0F172A),\n      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),\n      builder: (ctx) {\n        return Padding(\n          padding: const EdgeInsets.all(16.0),\n          child: Column(\n            mainAxisSize: MainAxisSize.min,\n            crossAxisAlignment: CrossAxisAlignment.start,\n            children: [\n              const Text('PHASE 6: MATCH ANALYTICS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),\n              const Divider(color: Colors.white24),\n              Text('Total Runs: $_totalRuns in $_completedOvers.$_ballsInCurrentOver overs', style: const TextStyle(color: Colors.white)),\n              const SizedBox(height: 6),\n              Text('Current Run Rate: ${(_totalRuns / ((_completedOvers * 6 + _ballsInCurrentOver) / 6.0)).toStringAsFixed(2)}', style: const TextStyle(color: Colors.cyanAccent)),\n              const SizedBox(height: 6),\n              Text('Current Partnership: $_partnershipRuns runs from $_partnershipBalls balls', style: const TextStyle(color: Colors.white70)),\n              const SizedBox(height: 6),\n              Text('Wickets Fallen: $_wickets', style: const TextStyle(color: Colors.redAccent)),\n            ],\n          ),\n        );\n      },\n    );\n  }\n\n  void _showPredictorModal() {\n    final double crr = (_completedOvers * 6 + _ballsInCurrentOver) > 0 ? (_totalRuns / ((_completedOvers * 6 + _ballsInCurrentOver) / 6.0)) : 6.0;\n    final int ballsRemaining = (widget.totalOvers * 6) - (_completedOvers * 6 + _ballsInCurrentOver);\n    final double oversRemaining = ballsRemaining / 6.0;\n\n    showModalBottomSheet(\n      context: context,\n      backgroundColor: const Color(0xFF0F172A),\n      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),\n      builder: (ctx) {\n        return Padding(\n          padding: const EdgeInsets.all(16.0),\n          child: Column(\n            mainAxisSize: MainAxisSize.min,\n            crossAxisAlignment: CrossAxisAlignment.start,\n            children: [\n              const Text('PHASE 7: PROJECTED SCORE PREDICTOR', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),\n              const Divider(color: Colors.white24),\n              Text('Projected at Current RR (${crr.toStringAsFixed(2)}): ${(_totalRuns + (crr * oversRemaining)).round()} runs', style: const TextStyle(color: Colors.cyanAccent)),\n              const SizedBox(height: 6),\n              Text('Projected at 6.0 RPO: ${(_totalRuns + (6.0 * oversRemaining)).round()} runs', style: const TextStyle(color: Colors.white70)),\n              const SizedBox(height: 6),\n              Text('Projected at 8.0 RPO: ${(_totalRuns + (8.0 * oversRemaining)).round()} runs', style: const TextStyle(color: Colors.white70)),\n              const SizedBox(height: 6),\n              Text('Projected at 10.0 RPO: ${(_totalRuns + (10.0 * oversRemaining)).round()} runs', style: const TextStyle(color: Colors.white70)),\n            ],\n          ),\n        );\n      },\n    );\n  }\n\n  void _showWinProbModal() {\n    showModalBottomSheet(\n      context: context,\n      backgroundColor: const Color(0xFF0F172A),\n      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),\n      builder: (ctx) {\n        return Padding(\n          padding: const EdgeInsets.all(16.0),\n          child: Column(\n            mainAxisSize: MainAxisSize.min,\n            children: [\n              const Text('PHASE 8: LIVE WIN PROBABILITY', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),\n              const SizedBox(height: 16),\n              Row(\n                mainAxisAlignment: MainAxisAlignment.spaceBetween,\n                children: [\n                  Text('${widget.teamA.name}: 64%', style: const TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold)),\n                  Text('${widget.teamB.name}: 36%', style: const TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.bold)),\n                ],\n              ),\n              const SizedBox(height: 10),\n              ClipRRect(\n                borderRadius: BorderRadius.circular(10),\n                child: const LinearProgressIndicator(\n                  value: 0.64,\n                  minHeight: 12,\n                  backgroundColor: Colors.orange,\n                  valueColor: AlwaysStoppedAnimation<Color>(Colors.cyan),\n                ),\n              ),\n            ],\n          ),\n        );\n      },\n    );\n  }\n}\n"
   },
   {
-    path: 'lib/screens/match_setup_screen.dart',
-    name: 'match_setup_screen.dart',
-    category: 'screens',
-    content: `import 'package:flutter/material.dart';
-import '../models/match_model.dart';
-import '../models/player_model.dart';
-import '../services/admob_service.dart';
-
-class MatchSetupScreen extends StatefulWidget {
-  final Function(MatchFormat format, int totalOvers, Team teamA, Team teamB) onStartMatch;
-  const MatchSetupScreen({super.key, required this.onStartMatch});
-
-  @override
-  State<MatchSetupScreen> createState() => _MatchSetupScreenState();
-}
-
-class _MatchSetupScreenState extends State<MatchSetupScreen> {
-  MatchFormat _selectedFormat = MatchFormat.t20;
-  int _totalOvers = 20;
-
-  final TextEditingController _teamAController = TextEditingController(text: 'Thunderbolts XI');
-  final TextEditingController _teamBController = TextEditingController(text: 'Falcons United');
-
-  final TextEditingController _playerAInput = TextEditingController();
-  final List<Player> _teamAPlayers = [];
-
-  final TextEditingController _playerBInput = TextEditingController();
-  final List<Player> _teamBPlayers = [];
-
-  void _addPlayerA() {
-    if (_playerAInput.text.trim().isEmpty) return;
-    setState(() {
-      _teamAPlayers.add(Player(id: 'p-a-\${_teamAPlayers.length + 1}', name: _playerAInput.text.trim(), role: PlayerRole.batsman));
-      _playerAInput.clear();
-    });
-  }
-
-  void _addPlayerB() {
-    if (_playerBInput.text.trim().isEmpty) return;
-    setState(() {
-      _teamBPlayers.add(Player(id: 'p-b-\${_teamBPlayers.length + 1}', name: _playerBInput.text.trim(), role: PlayerRole.batsman));
-      _playerBInput.clear();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Match Setup: 1-20 Overs & Lonely Players')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text('Choice of Overs (1 to 20):', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 6,
-              children: List.generate(20, (i) => ChoiceChip(
-                label: Text('\${i + 1}'),
-                selected: _totalOvers == i + 1,
-                onSelected: (_) => setState(() => _totalOvers = i + 1),
-              )),
-            ),
-            const SizedBox(height: 16),
-            TextField(controller: _teamAController, decoration: const InputDecoration(labelText: 'Custom Team A Name')),
-            Row(
-              children: [
-                Expanded(child: TextField(controller: _playerAInput, decoration: InputDecoration(labelText: 'Add Player #\${_teamAPlayers.length + 1} Lonely'))),
-                IconButton(icon: const Icon(Icons.add), onPressed: _addPlayerA),
-              ],
-            ),
-            const SizedBox(height: 16),
-            TextField(controller: _teamBController, decoration: const InputDecoration(labelText: 'Custom Team B Name')),
-            Row(
-              children: [
-                Expanded(child: TextField(controller: _playerBInput, decoration: InputDecoration(labelText: 'Add Player #\${_teamBPlayers.length + 1} Lonely'))),
-                IconButton(icon: const Icon(Icons.add), onPressed: _addPlayerB),
-              ],
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () {
-                AdMobService.showInterstitialAd(); // AUTOMATIC AD: MATCH START
-                final teamA = Team(id: 'team-a', name: _teamAController.text.trim(), shortName: 'TA', players: _teamAPlayers, playingXIIds: _teamAPlayers.map((p) => p.id).toList());
-                final teamB = Team(id: 'team-b', name: _teamBController.text.trim(), shortName: 'TB', players: _teamBPlayers, playingXIIds: _teamBPlayers.map((p) => p.id).toList());
-                widget.onStartMatch(_selectedFormat, _totalOvers, teamA, teamB);
-              },
-              child: Text('Start Match (\$_totalOvers Overs)'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}`
+    "path": "lib/screens/phase_detail_screen.dart",
+    "name": "phase_detail_screen.dart",
+    "category": "screens",
+    "content": "import 'package:flutter/material.dart';\nimport '../models/match_model.dart';\nimport '../models/player_model.dart';\nimport '../services/admob_service.dart';\nimport 'privacy_policy_screen.dart';\n\nclass PhaseDetailScreen extends StatelessWidget {\n  final int phaseNumber;\n  final String title;\n  final String subtitle;\n  final IconData icon;\n  final Color themeColor;\n\n  const PhaseDetailScreen({\n    super.key,\n    required this.phaseNumber,\n    required this.title,\n    required this.subtitle,\n    required this.icon,\n    this.themeColor = const Color(0xFF008DDA),\n  });\n\n  @override\n  Widget build(BuildContext context) {\n    return Scaffold(\n      backgroundColor: const Color(0xFF0B192C),\n      appBar: AppBar(\n        title: Text('Phase $phaseNumber: $title'),\n        backgroundColor: const Color(0xFF1E3E62),\n        elevation: 0,\n      ),\n      body: SingleChildScrollView(\n        padding: const EdgeInsets.all(16.0),\n        child: Column(\n          crossAxisAlignment: CrossAxisAlignment.stretch,\n          children: [\n            // Hero Card\n            Container(\n              padding: const EdgeInsets.all(20),\n              decoration: BoxDecoration(\n                gradient: LinearGradient(\n                  colors: [themeColor, const Color(0xFF1E3E62)],\n                  begin: Alignment.topLeft,\n                  end: Alignment.bottomRight,\n                ),\n                borderRadius: BorderRadius.circular(20),\n                boxShadow: [\n                  BoxShadow(\n                    color: themeColor.withOpacity(0.3),\n                    blurRadius: 16,\n                    offset: const Offset(0, 8),\n                  ),\n                ],\n              ),\n              child: Column(\n                crossAxisAlignment: CrossAxisAlignment.start,\n                children: [\n                  Row(\n                    children: [\n                      Container(\n                        padding: const EdgeInsets.all(12),\n                        decoration: BoxDecoration(\n                          color: Colors.white.withOpacity(0.15),\n                          shape: BoxShape.circle,\n                        ),\n                        child: Icon(icon, color: Colors.white, size: 28),\n                      ),\n                      const SizedBox(width: 14),\n                      Expanded(\n                        child: Column(\n                          crossAxisAlignment: CrossAxisAlignment.start,\n                          children: [\n                            Container(\n                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),\n                              decoration: BoxDecoration(\n                                color: Colors.cyanAccent.withOpacity(0.2),\n                                borderRadius: BorderRadius.circular(20),\n                                border: Border.all(color: Colors.cyanAccent.withOpacity(0.4)),\n                              ),\n                              child: Text(\n                                'PHASE $phaseNumber ARCHITECTURE',\n                                style: const TextStyle(\n                                  color: Colors.cyanAccent,\n                                  fontSize: 10,\n                                  fontWeight: FontWeight.bold,\n                                ),\n                              ),\n                            ),\n                            const SizedBox(height: 6),\n                            Text(\n                              title,\n                              style: const TextStyle(\n                                color: Colors.white,\n                                fontSize: 20,\n                                fontWeight: FontWeight.bold,\n                              ),\n                            ),\n                          ],\n                        ),\n                      ),\n                    ],\n                  ),\n                  const SizedBox(height: 14),\n                  Text(\n                    subtitle,\n                    style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),\n                  ),\n                ],\n              ),\n            ),\n\n            const SizedBox(height: 20),\n\n            // Feature Details for this Phase\n            _buildPhaseFeatures(context),\n\n            const SizedBox(height: 24),\n\n            // Action Button\n            ElevatedButton.icon(\n              onPressed: () => Navigator.pop(context),\n              icon: const Icon(Icons.arrow_back),\n              label: const Text('Back to Cricket Dashboard'),\n              style: ElevatedButton.styleFrom(\n                backgroundColor: themeColor,\n                foregroundColor: Colors.white,\n                padding: const EdgeInsets.symmetric(vertical: 14),\n                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),\n              ),\n            ),\n          ],\n        ),\n      ),\n    );\n  }\n\n  Widget _buildPhaseFeatures(BuildContext context) {\n    switch (phaseNumber) {\n      case 1:\n        return _featureCard(\n          'Phase 1: Match Dashboard & Hub',\n          '• Instant match start with 1 to 20 overs\\n• Real-time match resume capabilities\\n• Clean history management and quick play\\n• Direct access to player statistics and team rosters',\n          Icons.dashboard_outlined,\n        );\n      case 2:\n        return _featureCard(\n          'Phase 2: Team Setup & Playing XI Selection',\n          '• Full Playing XI selection (11 of 11 players)\\n• Captain (C) and Vice-Captain (VC) assignments\\n• Wicket-Keeper (WK) roles\\n• Lonely Player Entry for quick unassisted player addition\\n• Custom team branding & color themes',\n          Icons.groups_outlined,\n        );\n      case 3:\n        return _featureCard(\n          'Phase 3: Live Scoring & Strike Engine',\n          '• Real-time Striker & Non-Striker batsman tracking\\n• Live strike rate, 4s, 6s, and balls faced\\n• Bowler overs, maidens, runs, wickets, and economy\\n• Instant strike rotation on odd runs & over completion\\n• Comprehensive extras (Wide, No-Ball, Byes, Leg-Byes)',\n          Icons.sports_cricket_outlined,\n        );\n      case 4:\n        return _featureCard(\n          'Phase 4: Ball-by-Ball Live Commentary',\n          '• Automated intelligent commentary for every ball\\n• Dynamic boundary excitement descriptions\\n• Wicket drama and dismissal notes\\n• Over summary milestones',\n          Icons.mic_none_outlined,\n        );\n      case 5:\n        return _featureCard(\n          'Phase 5: Complete Scorecard & Batting/Bowling',\n          '• Professional batting scorecard table\\n• Detailed bowling analysis (O-M-R-W-Econ)\\n• Fall of Wickets (FOW) timeline\\n• Extras summary (Wides, No Balls, Byes)',\n          Icons.table_chart_outlined,\n        );\n      case 6:\n        return _featureCard(\n          'Phase 6: Match Analytics & Run Rates',\n          '• Current Run Rate (CRR) calculation\\n• Required Run Rate (RRR) for 2nd innings chase\\n• Boundary percentage and dot-ball counters\\n• Partnership analysis',\n          Icons.insights_outlined,\n        );\n      case 7:\n        return _featureCard(\n          'Phase 7: Match Predictor & Projections',\n          '• Projected total at Current Run Rate\\n• Projected score at 6.0 RPO, 8.0 RPO, 10.0 RPO, and 12.0 RPO\\n• Target defense probability calculation',\n          Icons.auto_graph_outlined,\n        );\n      case 8:\n        return _featureCard(\n          'Phase 8: Dynamic Win Probability Meter',\n          '• Live animated percentage bar (Team A vs Team B)\\n• Adjusts on every single ball, boundary, and wicket\\n• Contextual algorithm based on required runs vs balls left',\n          Icons.query_stats_outlined,\n        );\n      case 9:\n        return _featureCard(\n          'Phase 9: Over-by-Over Worm & Manhattan Chart',\n          '• Visual bars for runs scored in each over\\n• Color-coded boundary overs and maiden overs\\n• Wicket icons embedded above corresponding overs',\n          Icons.bar_chart_outlined,\n        );\n      case 10:\n        return _featureCard(\n          'Phase 10: Match Result & Player of the Match',\n          '• Conclusive victory announcement (Runs or Wickets)\\n• Top batsman and top bowler performance highlights\\n• Automated Player of the Match calculation',\n          Icons.emoji_events_outlined,\n        );\n      case 11:\n        return _featureCard(\n          'Phase 11: Match Folders & Storage',\n          '• Organized folders for Club Matches, Tournaments, Practice\\n• Local offline storage (Hive fast DB)\\n• Auto-delete old history toggle to keep storage minimal\\n• Instant search across past matches',\n          Icons.folder_special_outlined,\n        );\n      case 12:\n        return _featureCard(\n          'Phase 12: Scorecard Report & Print Export',\n          '• Formatted match summary report\\n• Clean printable text and digital scorecard\\n• Ready for match officials and team captains',\n          Icons.picture_as_pdf_outlined,\n        );\n      case 13:\n        return _featureCard(\n          'Phase 13: WhatsApp & Social Sharing',\n          '• One-tap match summary export for WhatsApp\\n• Live score text format for club groups\\n• Complete match result broadcast',\n          Icons.share_outlined,\n        );\n      case 14:\n        return _featureCard(\n          'Phase 14: Fireworks & Boundary Celebrations',\n          '• Haptic and visual celebrations on 4s and 6s\\n• Wicket celebration alert overlay\\n• Century, Fifty, and Match Win fanfare',\n          Icons.celebration_outlined,\n        );\n      case 15:\n        return Column(\n          children: [\n            _featureCard(\n              'Phase 15: Pure Flutter & AdMob Engine',\n              '• 100% native Flutter 3.x with Material 3 Dark theme\\n• High performance 60+ FPS rendering\\n• Google AdMob smart monetization (max 8 ads per match cap)\\n• Google Play Store compliant Privacy Policy screen',\n              Icons.phone_android_outlined,\n            ),\n            const SizedBox(height: 12),\n            Card(\n              color: const Color(0xFF1E3E62),\n              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),\n              child: Padding(\n                padding: const EdgeInsets.all(16.0),\n                child: Column(\n                  crossAxisAlignment: CrossAxisAlignment.start,\n                  children: [\n                    Row(\n                      children: const [\n                        Icon(Icons.privacy_tip_outlined, color: Colors.cyanAccent, size: 22),\n                        SizedBox(width: 10),\n                        Text(\n                          'Google Play Privacy Policy',\n                          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),\n                        ),\n                      ],\n                    ),\n                    const SizedBox(height: 8),\n                    const Text(\n                      'Phase 15 requires an explicit, accessible Privacy Policy for Google Play Store compliance, detailing AdMob data collection, offline Hive storage, and user privacy safeguards.',\n                      style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.4),\n                    ),\n                    const SizedBox(height: 14),\n                    SizedBox(\n                      width: double.infinity,\n                      child: ElevatedButton.icon(\n                        onPressed: () {\n                          Navigator.push(\n                            context,\n                            MaterialPageRoute(builder: (context) => const PrivacyPolicyScreen()),\n                          );\n                        },\n                        icon: const Icon(Icons.shield_outlined),\n                        label: const Text('Open Full Privacy Policy Screen'),\n                        style: ElevatedButton.styleFrom(\n                          backgroundColor: const Color(0xFF41B06E),\n                          foregroundColor: Colors.white,\n                          padding: const EdgeInsets.symmetric(vertical: 12),\n                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),\n                        ),\n                      ),\n                    ),\n                  ],\n                ),\n              ),\n            ),\n          ],\n        );\n      default:\n        return _featureCard(\n          'Phase Feature',\n          'Full native cricket score engine active.',\n          Icons.check_circle_outline,\n        );\n    }\n  }\n\n  Widget _featureCard(String header, String points, IconData iconData) {\n    return Card(\n      color: const Color(0xFF1E293B),\n      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),\n      child: Padding(\n        padding: const EdgeInsets.all(18.0),\n        child: Column(\n          crossAxisAlignment: CrossAxisAlignment.start,\n          children: [\n            Row(\n              children: [\n                Icon(iconData, color: Colors.cyanAccent, size: 22),\n                const SizedBox(width: 10),\n                Expanded(\n                  child: Text(\n                    header,\n                    style: const TextStyle(\n                      color: Colors.white,\n                      fontSize: 16,\n                      fontWeight: FontWeight.bold,\n                    ),\n                  ),\n                ),\n              ],\n            ),\n            const Divider(color: Colors.white12, height: 24),\n            Text(\n              points,\n              style: const TextStyle(\n                color: Colors.white70,\n                fontSize: 13,\n                height: 1.6,\n              ),\n            ),\n          ],\n        ),\n      ),\n    );\n  }\n}\n"
   },
   {
-    path: 'lib/models/match_model.dart',
-    name: 'match_model.dart',
-    category: 'models',
-    content: `import 'player_model.dart';
-
-enum MatchFormat { t20, odi, test, custom }
-enum DismissalType { bowled, caught, lbw, runOut, stumped, hitWicket, retiredHurt }
-
-class Team {
-  final String id;
-  final String name;
-  final String shortName;
-  final String logo;
-  final List<Player> players;
-  final List<String> playingXIIds;
-
-  Team({
-    required this.id,
-    required this.name,
-    required this.shortName,
-    this.logo = '🏏',
-    required this.players,
-    required this.playingXIIds,
-  });
-}`
+    "path": "lib/screens/privacy_policy_screen.dart",
+    "name": "privacy_policy_screen.dart",
+    "category": "screens",
+    "content": "import 'package:flutter/material.dart';\n\nclass PrivacyPolicyScreen extends StatelessWidget {\n  const PrivacyPolicyScreen({super.key});\n\n  @override\n  Widget build(BuildContext context) {\n    return Scaffold(\n      backgroundColor: const Color(0xFF0F172A),\n      appBar: AppBar(\n        title: const Text('Privacy Policy'),\n        backgroundColor: const Color(0xFF1E293B),\n        elevation: 0,\n      ),\n      body: SingleChildScrollView(\n        padding: const EdgeInsets.all(16.0),\n        child: Column(\n          crossAxisAlignment: CrossAxisAlignment.start,\n          children: [\n            _buildCard(\n              title: 'Privacy Policy for Cricket Scoreboard',\n              subtitle: 'Last updated: 2026',\n              content:\n                  'We take your privacy seriously. This Privacy Policy explains what information we collect, how it is used, and how your data is protected when using the Cricket Scoreboard application.',\n              icon: Icons.shield_outlined,\n            ),\n            const SizedBox(height: 16),\n            _buildSection(\n              title: '1. Information We Collect & Local Storage',\n              body:\n                  'Cricket Scoreboard stores your match scores, teams, player statistics, and match history strictly on your local device (using Hive / Local Storage). We do not collect, upload, or sell your personal match data to any remote private servers.',\n              icon: Icons.storage_outlined,\n            ),\n            const SizedBox(height: 16),\n            _buildSection(\n              title: '2. Google AdMob Advertising & Monetization',\n              body:\n                  'Our app integrates Google AdMob to display banner and interstitial ads. Google AdMob may collect and process device identifiers, advertising IDs, and non-personal diagnostic data to serve ads in compliance with Google Play Store policies and user consent guidelines.',\n              icon: Icons.campaign_outlined,\n            ),\n            const SizedBox(height: 16),\n            _buildSection(\n              title: '3. Device Permissions',\n              body:\n                  '• INTERNET & ACCESS_NETWORK_STATE: Required solely to load AdMob advertisements and verify network connectivity.\\n• Storage permissions (if applicable) are only utilized to export PDF match summaries to your downloads folder.',\n              icon: Icons.security_outlined,\n            ),\n            const SizedBox(height: 16),\n            _buildSection(\n              title: '4. Children’s Privacy (COPPA & GDPR)',\n              body:\n                  'Cricket Scoreboard does not knowingly collect personally identifiable information from children under 13. All scoring is done offline locally on the user device.',\n              icon: Icons.child_care_outlined,\n            ),\n            const SizedBox(height: 16),\n            _buildSection(\n              title: '5. Contact Us',\n              body:\n                  'If you have any questions or feedback regarding this Privacy Policy, please contact the developer via Google Play developer support.',\n              icon: Icons.email_outlined,\n            ),\n            const SizedBox(height: 32),\n            Center(\n              child: Text(\n                '© 2026 Cricket Scoreboard 15 Phases • All Rights Reserved',\n                style: TextStyle(\n                  color: Colors.white.withOpacity(0.5),\n                  fontSize: 12,\n                ),\n              ),\n            ),\n          ],\n        ),\n      ),\n    );\n  }\n\n  Widget _buildCard({\n    required String title,\n    required String subtitle,\n    required String content,\n    required IconData icon,\n  }) {\n    return Container(\n      padding: const EdgeInsets.all(18),\n      decoration: BoxDecoration(\n        color: const Color(0xFF1E293B),\n        borderRadius: BorderRadius.circular(16),\n        border: Border.all(color: Colors.blueAccent.withOpacity(0.3)),\n      ),\n      child: Column(\n        crossAxisAlignment: CrossAxisAlignment.start,\n        children: [\n          Row(\n            children: [\n              Icon(icon, color: Colors.cyanAccent, size: 28),\n              const SizedBox(width: 12),\n              Expanded(\n                child: Column(\n                  crossAxisAlignment: CrossAxisAlignment.start,\n                  children: [\n                    Text(\n                      title,\n                      style: const TextStyle(\n                        color: Colors.white,\n                        fontSize: 18,\n                        fontWeight: FontWeight.bold,\n                      ),\n                    ),\n                    Text(\n                      subtitle,\n                      style: TextStyle(\n                        color: Colors.white.withOpacity(0.6),\n                        fontSize: 12,\n                      ),\n                    ),\n                  ],\n                ),\n              ),\n            ],\n          ),\n          const SizedBox(height: 12),\n          Text(\n            content,\n            style: TextStyle(\n              color: Colors.white.withOpacity(0.85),\n              fontSize: 14,\n              height: 1.5,\n            ),\n          ),\n        ],\n      ),\n    );\n  }\n\n  Widget _buildSection({\n    required String title,\n    required String body,\n    required IconData icon,\n  }) {\n    return Container(\n      padding: const EdgeInsets.all(16),\n      decoration: BoxDecoration(\n        color: const Color(0xFF1E293B),\n        borderRadius: BorderRadius.circular(16),\n        border: Border.all(color: Colors.white.withOpacity(0.08)),\n      ),\n      child: Column(\n        crossAxisAlignment: CrossAxisAlignment.start,\n        children: [\n          Row(\n            children: [\n              Icon(icon, color: Colors.blueAccent, size: 20),\n              const SizedBox(width: 10),\n              Expanded(\n                child: Text(\n                  title,\n                  style: const TextStyle(\n                    color: Colors.white,\n                    fontSize: 15,\n                    fontWeight: FontWeight.w600,\n                  ),\n                ),\n              ),\n            ],\n          ),\n          const SizedBox(height: 10),\n          Text(\n            body,\n            style: TextStyle(\n              color: Colors.white.withOpacity(0.8),\n              fontSize: 13,\n              height: 1.5,\n            ),\n          ),\n        ],\n      ),\n    );\n  }\n}\n"
   },
   {
-    path: 'lib/models/player_model.dart',
-    name: 'player_model.dart',
-    category: 'models',
-    content: `enum PlayerRole { batsman, bowler, allRounder, wicketKeeper }
-
-class Player {
-  final String id;
-  final String name;
-  final PlayerRole role;
-  final bool isCaptain;
-  final bool isViceCaptain;
-  final bool isWicketKeeper;
-
-  Player({
-    required this.id,
-    required this.name,
-    required this.role,
-    this.isCaptain = false,
-    this.isViceCaptain = false,
-    this.isWicketKeeper = false,
-  });
-}`
+    "path": "lib/models/match_model.dart",
+    "name": "match_model.dart",
+    "category": "models",
+    "content": "import 'player_model.dart';\n\nenum MatchFormat { t20, odi, test, custom }\nenum DismissalType { bowled, caught, lbw, runOut, stumped, hitWicket, retiredHurt }\n\nclass Team {\n  final String id;\n  final String name;\n  final String shortName;\n  final String primaryColorHex;\n  final String logo;\n  final List<Player> players;\n  final List<String> playingXIIds;\n  final List<String> benchPlayerIds;\n\n  Team({\n    required this.id,\n    required this.name,\n    required this.shortName,\n    this.primaryColorHex = '#008DDA',\n    this.logo = '⚡',\n    required this.players,\n    required this.playingXIIds,\n    this.benchPlayerIds = const [],\n  });\n\n  Map<String, dynamic> toJson() => {\n        'id': id,\n        'name': name,\n        'shortName': shortName,\n        'primaryColorHex': primaryColorHex,\n        'logo': logo,\n        'players': players.map((p) => p.toJson()).toList(),\n        'playingXIIds': playingXIIds,\n        'benchPlayerIds': benchPlayerIds,\n      };\n\n  factory Team.fromJson(Map<String, dynamic> json) => Team(\n        id: json['id'],\n        name: json['name'],\n        shortName: json['shortName'],\n        primaryColorHex: json['primaryColorHex'] ?? '#008DDA',\n        logo: json['logo'] ?? '⚡',\n        players: (json['players'] as List)\n            .map((p) => Player.fromJson(p))\n            .toList(),\n        playingXIIds: List<String>.from(json['playingXIIds']),\n        benchPlayerIds: List<String>.from(json['benchPlayerIds'] ?? []),\n      );\n}\n\nclass BatterScore {\n  final String playerId;\n  final String name;\n  int runs;\n  int balls;\n  int fours;\n  int sixes;\n  bool isOut;\n  String? dismissalText;\n\n  BatterScore({\n    required this.playerId,\n    required this.name,\n    this.runs = 0,\n    this.balls = 0,\n    this.fours = 0,\n    this.sixes = 0,\n    this.isOut = false,\n    this.dismissalText,\n  });\n\n  double get strikeRate => balls > 0 ? (runs / balls) * 100 : 0.0;\n}\n\nclass BowlerScore {\n  final String playerId;\n  final String name;\n  int overs;\n  int ballsInOver;\n  int maidens;\n  int runsConceded;\n  int wickets;\n\n  BowlerScore({\n    required this.playerId,\n    required this.name,\n    this.overs = 0,\n    this.ballsInOver = 0,\n    this.maidens = 0,\n    this.runsConceded = 0,\n    this.wickets = 0,\n  });\n\n  double get economy {\n    final double totalOvers = overs + (ballsInOver / 6.0);\n    return totalOvers > 0 ? runsConceded / totalOvers : 0.0;\n  }\n}\n\nclass CommentaryItem {\n  final String overBall;\n  final String text;\n  final int runs;\n  final bool isWicket;\n  final bool isBoundary;\n\n  CommentaryItem({\n    required this.overBall,\n    required this.text,\n    required this.runs,\n    this.isWicket = false,\n    this.isBoundary = false,\n  });\n}\n\n"
   },
   {
-    path: 'lib/screens/privacy_policy_screen.dart',
-    name: 'privacy_policy_screen.dart',
-    category: 'screens',
-    content: `import 'package:flutter/material.dart';
-
-class PrivacyPolicyScreen extends StatelessWidget {
-  const PrivacyPolicyScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
-      appBar: AppBar(
-        title: const Text('Privacy Policy'),
-        backgroundColor: const Color(0xFF1E293B),
-        elevation: 0,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildCard(
-              title: 'Privacy Policy for Cricket Scoreboard',
-              subtitle: 'Last updated: 2026',
-              content:
-                  'We take your privacy seriously. This Privacy Policy explains what information we collect, how it is used, and how your data is protected when using Cricket Scoreboard.',
-              icon: Icons.shield_outlined,
-            ),
-            const SizedBox(height: 16),
-            _buildSection(
-              title: '1. Information We Collect & Local Storage',
-              body:
-                  'Cricket Scoreboard stores match scores, teams, player statistics, and match history strictly on your local device (using Hive / Local Storage). We do not collect, upload, or sell your personal data to remote servers.',
-              icon: Icons.storage_outlined,
-            ),
-            const SizedBox(height: 16),
-            _buildSection(
-              title: '2. Google AdMob Advertising',
-              body:
-                  'Our app integrates Google AdMob for banner and interstitial ads. Google AdMob may collect and process device identifiers, advertising IDs, and diagnostic data to serve ads in compliance with Google Play Store policies and user consent guidelines.',
-              icon: Icons.campaign_outlined,
-            ),
-            const SizedBox(height: 16),
-            _buildSection(
-              title: '3. Device Permissions',
-              body:
-                  '• INTERNET & ACCESS_NETWORK_STATE: Required solely to load AdMob advertisements and verify connectivity.\\n• Local storage permissions are only used to export match summaries.',
-              icon: Icons.security_outlined,
-            ),
-            const SizedBox(height: 16),
-            _buildSection(
-              title: '4. Children\\'s Privacy (COPPA & GDPR)',
-              body:
-                  'Cricket Scoreboard does not knowingly collect personally identifiable information from children under 13. All match scoring is managed offline locally on the user device.',
-              icon: Icons.child_care_outlined,
-            ),
-            const SizedBox(height: 16),
-            _buildSection(
-              title: '5. Contact Us',
-              body:
-                  'If you have questions regarding this Privacy Policy, please contact the developer via Google Play developer support.',
-              icon: Icons.email_outlined,
-            ),
-            const SizedBox(height: 32),
-            Center(
-              child: Text(
-                '© 2026 Cricket Scoreboard 15 Phases • All Rights Reserved',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.5),
-                  fontSize: 12,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCard({
-    required String title,
-    required String subtitle,
-    required String content,
-    required IconData icon,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.blueAccent.withOpacity(0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: Colors.cyanAccent, size: 28),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.6),
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            content,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.85),
-              fontSize: 14,
-              height: 1.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSection({
-    required String title,
-    required String body,
-    required IconData icon,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: Colors.blueAccent, size: 20),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            body,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.8),
-              fontSize: 13,
-              height: 1.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}`
+    "path": "lib/models/player_model.dart",
+    "name": "player_model.dart",
+    "category": "models",
+    "content": "enum PlayerRole {\n  batsman,\n  bowler,\n  allRounder,\n  wicketKeeper,\n}\n\nclass Player {\n  final String id;\n  final String name;\n  final PlayerRole role;\n  final bool isCaptain;\n  final bool isViceCaptain;\n  final bool isWicketKeeper;\n  final String? avatar;\n\n  Player({\n    required this.id,\n    required this.name,\n    required this.role,\n    this.isCaptain = false,\n    this.isViceCaptain = false,\n    this.isWicketKeeper = false,\n    this.avatar,\n  });\n\n  Player copyWith({\n    String? id,\n    String? name,\n    PlayerRole? role,\n    bool? isCaptain,\n    bool? isViceCaptain,\n    bool? isWicketKeeper,\n    String? avatar,\n  }) {\n    return Player(\n      id: id ?? this.id,\n      name: name ?? this.name,\n      role: role ?? this.role,\n      isCaptain: isCaptain ?? this.isCaptain,\n      isViceCaptain: isViceCaptain ?? this.isViceCaptain,\n      isWicketKeeper: isWicketKeeper ?? this.isWicketKeeper,\n      avatar: avatar ?? this.avatar,\n    );\n  }\n\n  Map<String, dynamic> toJson() => {\n        'id': id,\n        'name': name,\n        'role': role.name,\n        'isCaptain': isCaptain,\n        'isViceCaptain': isViceCaptain,\n        'isWicketKeeper': isWicketKeeper,\n        'avatar': avatar,\n      };\n\n  factory Player.fromJson(Map<String, dynamic> json) => Player(\n        id: json['id'] as String,\n        name: json['name'] as String,\n        role: PlayerRole.values.firstWhere(\n          (e) => e.name == json['role'],\n          orElse: () => PlayerRole.batsman,\n        ),\n        isCaptain: json['isCaptain'] as bool? ?? false,\n        isViceCaptain: json['isViceCaptain'] as bool? ?? false,\n        isWicketKeeper: json['isWicketKeeper'] as bool? ?? false,\n        avatar: json['avatar'] as String?,\n      );\n}\n"
+  },
+  {
+    "path": "lib/models/player_career_stats.dart",
+    "name": "player_career_stats.dart",
+    "category": "models",
+    "content": "class MatchPerformanceRecord {\n  final String matchId;\n  final String matchTitle;\n  final String matchDate;\n  final String opponentTeam;\n  final String venue;\n  final int battingRuns;\n  final int battingBalls;\n  final int fours;\n  final int sixes;\n  final bool isOut;\n  final String? dismissalText;\n  final String bowlingOvers;\n  final int bowlingRuns;\n  final int bowlingWickets;\n  final String? resultSummary;\n\n  MatchPerformanceRecord({\n    required this.matchId,\n    required this.matchTitle,\n    required this.matchDate,\n    required this.opponentTeam,\n    required this.venue,\n    this.battingRuns = 0,\n    this.battingBalls = 0,\n    this.fours = 0,\n    this.sixes = 0,\n    this.isOut = false,\n    this.dismissalText,\n    this.bowlingOvers = '0.0',\n    this.bowlingRuns = 0,\n    this.bowlingWickets = 0,\n    this.resultSummary,\n  });\n}\n\nclass PlayerCareerStats {\n  final String playerId;\n  final String playerName;\n  final String teamName;\n  final String role;\n  int matches;\n  int inningsBatted;\n  int notOuts;\n  int runs;\n  int ballsFaced;\n  int highestScore;\n  bool highestScoreNotOut;\n  int fifties;\n  int centuries;\n  int fours;\n  int sixes;\n\n  int inningsBowled;\n  int ballsBowled;\n  int maidens;\n  int runsConceded;\n  int wickets;\n  int bestBowlingWickets;\n  int bestBowlingRuns;\n\n  final List<MatchPerformanceRecord> matchPerformances;\n\n  PlayerCareerStats({\n    required this.playerId,\n    required this.playerName,\n    required this.teamName,\n    required this.role,\n    this.matches = 0,\n    this.inningsBatted = 0,\n    this.notOuts = 0,\n    this.runs = 0,\n    this.ballsFaced = 0,\n    this.highestScore = 0,\n    this.highestScoreNotOut = false,\n    this.fifties = 0,\n    this.centuries = 0,\n    this.fours = 0,\n    this.sixes = 0,\n    this.inningsBowled = 0,\n    this.ballsBowled = 0,\n    this.maidens = 0,\n    this.runsConceded = 0,\n    this.wickets = 0,\n    this.bestBowlingWickets = 0,\n    this.bestBowlingRuns = 0,\n    List<MatchPerformanceRecord>? matchPerformances,\n  }) : matchPerformances = matchPerformances ?? [];\n\n  double get battingAverage {\n    final dismissed = inningsBatted - notOuts;\n    return dismissed > 0 ? (runs / dismissed) : runs.toDouble();\n  }\n\n  double get strikeRate => ballsFaced > 0 ? (runs / ballsFaced) * 100 : 0.0;\n  \n  double get bowlingEconomy {\n    final overs = ballsBowled / 6.0;\n    return overs > 0 ? runsConceded / overs : 0.0;\n  }\n\n  double get bowlingAverage => wickets > 0 ? runsConceded / wickets.toDouble() : 0.0;\n}\n"
   }
 ];

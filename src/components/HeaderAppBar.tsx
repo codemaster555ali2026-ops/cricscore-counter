@@ -47,8 +47,9 @@ export const HeaderAppBar: React.FC<Props> = ({
       <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
         {/* Brand Title */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center text-xl shadow-lg border border-white/20">
-            🏏
+          <div className="w-10 h-10 rounded-2xl overflow-hidden bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center text-xl shadow-lg border border-cyan-400/40">
+            <img src="/app_icon.png" alt="Cricket App Icon" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} />
+            <span className="sr-only">Cricket Scoreboard Icon</span>
           </div>
           <div>
             <div className="flex items-center gap-2">

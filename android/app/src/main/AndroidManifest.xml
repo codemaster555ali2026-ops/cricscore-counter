@@ -9,6 +9,7 @@
         android:label="Cricket Scoreboard"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:hardwareAccelerated="true">
 
         <!-- Google AdMob Application ID (Official Google Test App ID for Android) -->

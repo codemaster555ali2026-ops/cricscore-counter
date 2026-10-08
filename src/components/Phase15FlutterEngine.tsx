@@ -68,21 +68,26 @@ Native Cross-Platform Cricket Scoring System with Material 3 Theme, Riverpod, Hi
       {/* Header Banner */}
       <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 border border-blue-500/40 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 text-xs font-bold border border-cyan-500/30">
-                PHASE 15: COMPLETE DATA ENGINE
-              </span>
-              <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/30">
-                PURE FLUTTER 3 & DART
-              </span>
+          <div className="flex items-start gap-4">
+            <div className="w-16 h-16 rounded-2xl overflow-hidden bg-gradient-to-tr from-blue-600 to-cyan-500 flex-shrink-0 shadow-2xl border-2 border-cyan-400/50">
+              <img src="/app_icon.png" alt="Cricket Icon" className="w-full h-full object-cover" />
             </div>
-            <h2 className="text-2xl sm:text-3xl font-black text-white">
-              Native Flutter Source Code Engine
-            </h2>
-            <p className="text-slate-300 text-sm mt-1 max-w-xl">
-              100% production-ready Flutter & Dart codebase. Built with Flutter 3.x, Riverpod state management, Hive local storage, fl_chart graphs, PDF reporting, and Google AdMob.
-            </p>
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 text-xs font-bold border border-cyan-500/30">
+                  PHASE 15: COMPLETE DATA ENGINE
+                </span>
+                <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/30">
+                  PURE FLUTTER 3 & DART
+                </span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-black text-white">
+                Native Flutter Source Code Engine
+              </h2>
+              <p className="text-slate-300 text-sm mt-1 max-w-xl">
+                100% production-ready Flutter & Dart codebase. Built with Flutter 3.x, Riverpod state management, Hive local storage, fl_chart graphs, PDF reporting, and Google AdMob.
+              </p>
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
