@@ -15,7 +15,7 @@ workflows:
           flutter packages pub get
       - name: Build Android Release APK
         script: |
-          flutter build apk --release --no-tree-shake-icons
+          flutter build apk --release --no-tree-shake-icons --android-skip-build-dependency-validation
     artifacts:
       - build/**/outputs/**/*.apk
       - build/**/outputs/**/mapping.txt

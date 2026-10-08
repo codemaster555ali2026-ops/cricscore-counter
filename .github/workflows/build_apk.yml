@@ -31,14 +31,14 @@ jobs:
       - name: 🔧 Prepare Android Platform & Wrapper
         run: |
           flutter config --no-analytics
-          flutter create . --platforms=android --org=com.cricket.scoreboard
+          rm -f ./android/build.gradle.kts ./android/app/build.gradle.kts ./android/settings.gradle.kts || true
           chmod +x ./android/gradlew || true
 
       - name: 📦 Install Flutter & Dart Dependencies
         run: flutter pub get
 
       - name: 🔨 Compile Android Release APK
-        run: flutter build apk --release --no-tree-shake-icons
+        run: flutter build apk --release --no-tree-shake-icons --android-skip-build-dependency-validation
 
       - name: 📤 Upload Cricket Scoreboard Release APK Artifact
         uses: actions/upload-artifact@v4

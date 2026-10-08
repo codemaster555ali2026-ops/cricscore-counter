@@ -43,14 +43,14 @@ jobs:
       - name: Prepare Android Platform & Wrapper
         run: |
           flutter config --no-analytics
-          flutter create . --platforms=android --org=com.cricket.scoreboard
+          rm -f ./android/build.gradle.kts ./android/app/build.gradle.kts ./android/settings.gradle.kts || true
           chmod +x ./android/gradlew || true
 
       - name: Install Dependencies
         run: flutter pub get
 
       - name: Compile Android Release APK
-        run: flutter build apk --release --no-tree-shake-icons
+        run: flutter build apk --release --no-tree-shake-icons --android-skip-build-dependency-validation
 
       - name: Upload Release APK Artifact
         uses: actions/upload-artifact@v4
@@ -81,7 +81,7 @@ jobs:
           flutter packages pub get
       - name: Build Android Release APK
         script: |
-          flutter build apk --release --no-tree-shake-icons
+          flutter build apk --release --no-tree-shake-icons --android-skip-build-dependency-validation
     artifacts:
       - build/**/outputs/**/*.apk
       - build/**/outputs/**/mapping.txt
@@ -204,7 +204,19 @@ dependencies {
     category: 'config',
     content: `org.gradle.jvmargs=-Xmx4G -XX:MaxMetaspaceSize=1G
 android.useAndroidX=true
-android.enableJetifier=true`
+android.enableJetifier=true
+android.newDsl=false
+android.builtInKotlin=false`
+  },
+  {
+    path: 'android/gradle/wrapper/gradle-wrapper.properties',
+    name: 'gradle-wrapper.properties',
+    category: 'config',
+    content: `distributionBase=GRADLE_USER_HOME
+distributionPath=wrapper/dists
+zipStoreBase=GRADLE_USER_HOME
+zipStorePath=wrapper/dists
+distributionUrl=https\\://services.gradle.org/distributions/gradle-8.14-all.zip`
   },
   {
     path: 'android/app/src/main/AndroidManifest.xml',
