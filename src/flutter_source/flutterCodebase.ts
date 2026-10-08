@@ -28,7 +28,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -158,7 +158,7 @@ include ":app"`
 
 android {
     namespace "com.cricket.scoreboard.cricket_scoreboard_15phases"
-    compileSdk 34
+    compileSdk = 36
     ndkVersion flutter.ndkVersion
 
     compileOptions {
@@ -173,7 +173,7 @@ android {
     defaultConfig {
         applicationId "com.cricket.scoreboard.cricket_scoreboard_15phases"
         minSdkVersion 21
-        targetSdkVersion 34
+        targetSdkVersion 36
         versionCode 1
         versionName "1.0"
         multiDexEnabled true
