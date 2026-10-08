@@ -61,14 +61,22 @@ export function generateBallCommentary(params: {
         return `OUT! BOWLED HIM! ${bowlerName} breaks through! Perfect line and length, hits the top of off stump! ${batterName} has to walk.`;
       case 'Caught':
         return `OUT! CAUGHT! ${batterName} miscues in the air and ${fielderName || 'the fielder'} pouches it safely! Great catch for ${bowlerName}.`;
+      case 'Caught & Bowled':
+        return `OUT! CAUGHT & BOWLED! Incredible reflex catch by ${bowlerName} off his own bowling! ${batterName} is stunned!`;
       case 'LBW':
         return `OUT! LBW! Trapped right in front of the stumps! Umpire raises the finger without hesitation. Huge breakthrough for ${bowlerName}!`;
       case 'Run Out':
-        return `OUT! RUN OUT! Chaos between the wickets! Direct hit or quick throw by ${fielderName || 'fielder'}, and ${batterName} is well short!`;
+        return `OUT! RUN OUT! Chaos between the wickets! Direct hit or quick throw by ${fielderName || 'the fielder'}, and ${batterName} is well short!`;
       case 'Stumped':
-        return `OUT! STUMPED! ${batterName} steps down the track, beaten in flight, and lightning quick work with the gloves!`;
+        return `OUT! STUMPED! ${batterName} steps down the track, beaten in flight, and lightning quick work with the gloves by ${fielderName || 'the wicketkeeper'}!`;
       case 'Hit Wicket':
         return `OUT! HIT WICKET! ${batterName} moves back and dislodges the bails with the bat! Unfortunate dismissal!`;
+      case 'Obstructing Field':
+        return `OUT! OBSTRUCTING THE FIELD! Rare dismissal as ${batterName} is ruled out for obstructing the fielder's throw!`;
+      case 'Retired Out':
+        return `${batterName} has been retired out and heads back to the dugout.`;
+      case 'Retired Hurt':
+        return `${batterName} is retired hurt and leaves the field for medical attention.`;
       default:
         return `OUT! Wicket falls! ${batterName} departs after a key spell from ${bowlerName}.`;
     }

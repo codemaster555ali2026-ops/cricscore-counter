@@ -3,11 +3,14 @@ export type MatchFormat = 'T20' | 'ODI' | 'Test' | 'Custom';
 export type DismissalType =
   | 'Bowled'
   | 'Caught'
+  | 'Caught & Bowled'
   | 'LBW'
   | 'Run Out'
   | 'Stumped'
   | 'Hit Wicket'
-  | 'Retired Hurt';
+  | 'Obstructing Field'
+  | 'Retired Hurt'
+  | 'Retired Out';
 
 export interface Player {
   id: string;

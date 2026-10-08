@@ -13,7 +13,7 @@ export interface AdInterstitialEvent {
   ctaText: string;
 }
 
-type AdListener = (event: AdInterstitialEvent | null) => void;
+type AdListener = (event: AdInterstitialEvent | null, adsCount: number) => void;
 
 class AdMobManager {
   private listeners: Set<AdListener> = new Set();
@@ -29,37 +29,46 @@ class AdMobManager {
 
   public resetMatchAdsCount(): void {
     this.matchAdsShown = 0;
+    this.notify();
+  }
+
+  public isLimitReached(): boolean {
+    return this.matchAdsShown >= this.MAX_ADS_PER_MATCH;
+  }
+
+  public getRemainingAds(): number {
+    return Math.max(0, this.MAX_ADS_PER_MATCH - this.matchAdsShown);
   }
 
   public subscribe(listener: AdListener): () => void {
     this.listeners.add(listener);
-    listener(this.currentAd);
+    listener(this.currentAd, this.matchAdsShown);
     return () => {
       this.listeners.delete(listener);
     };
   }
 
   private notify() {
-    this.listeners.forEach((listener) => listener(this.currentAd));
+    this.listeners.forEach((listener) => listener(this.currentAd, this.matchAdsShown));
   }
 
   public showInterstitial(params: {
     trigger: AdTriggerContext;
     title?: string;
     subtitle?: string;
-  }) {
+  }): boolean {
+    // STRICT LIMIT: Max 8 all types of ads in the entire match!
+    if (this.matchAdsShown >= this.MAX_ADS_PER_MATCH) {
+      console.log(`[AdMob] Strict match limit reached: 8/8 ads already shown. No more ads allowed.`);
+      return false;
+    }
+
     if (!this.autoAdsEnabled && params.trigger !== 'custom') {
-      return;
+      return false;
     }
 
-    // STRICT LIMIT: Max 8 ads in an entire match!
-    if (params.trigger !== 'custom' && this.matchAdsShown >= this.MAX_ADS_PER_MATCH) {
-      return;
-    }
-
-    if (params.trigger !== 'custom') {
-      this.matchAdsShown++;
-    }
+    // Increment strictly for every ad shown
+    this.matchAdsShown++;
 
     let creativeName = 'Cricket Pro Equipment & Live Stream';
     let creativeIcon = '🏏';
@@ -107,6 +116,17 @@ class AdMobManager {
     };
 
     this.notify();
+    return true;
+  }
+
+  public recordRewardedAdView(): boolean {
+    if (this.matchAdsShown >= this.MAX_ADS_PER_MATCH) {
+      console.log(`[AdMob] Strict match limit reached: 8/8 ads already shown.`);
+      return false;
+    }
+    this.matchAdsShown++;
+    this.notify();
+    return true;
   }
 
   public closeInterstitial() {

@@ -111,7 +111,18 @@ class _LiveScoringScreenState extends State<LiveScoringScreen> {
     }
   }
 
-  void _recordBall(int runs, {bool isWicket = false, bool isWide = false, bool isNoBall = false, bool isLegBye = false, bool isBye = false}) {
+  void _recordBall(
+    int runs, {
+    bool isWicket = false,
+    String dismissalType = 'Bowled',
+    String? fielderName,
+    int? dismissedBatterIndex,
+    int? incomingBatterIndex,
+    bool isWide = false,
+    bool isNoBall = false,
+    bool isLegBye = false,
+    bool isBye = false,
+  }) {
     if (_isMatchCompleted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Match is already completed! Target was reached.')),
@@ -147,11 +158,38 @@ class _LiveScoringScreenState extends State<LiveScoringScreen> {
 
       if (isWicket) {
         _wickets++;
-        bowler.wickets++;
-        striker.balls++;
-        _partnershipBalls++;
-        striker.isOut = true;
-        striker.dismissalText = 'b ${bowler.name}';
+        final outIndex = dismissedBatterIndex ?? _strikerIndex;
+        final dismissedBatter = _batterScores[outIndex];
+
+        // Bowler credited if not run out, retired, or obstructing
+        if (dismissalType != 'Run Out' && dismissalType != 'Obstructing Field' && dismissalType != 'Retired Hurt') {
+          bowler.wickets++;
+        }
+
+        if (outIndex == _strikerIndex) {
+          striker.balls++;
+          _partnershipBalls++;
+        }
+        dismissedBatter.isOut = true;
+
+        if (dismissalType == 'Caught') {
+          dismissedBatter.dismissalText = 'c ${fielderName ?? "sub"} b ${bowler.name}';
+        } else if (dismissalType == 'Caught & Bowled') {
+          dismissedBatter.dismissalText = 'c & b ${bowler.name}';
+        } else if (dismissalType == 'Bowled') {
+          dismissedBatter.dismissalText = 'b ${bowler.name}';
+        } else if (dismissalType == 'LBW') {
+          dismissedBatter.dismissalText = 'lbw b ${bowler.name}';
+        } else if (dismissalType == 'Run Out') {
+          dismissedBatter.dismissalText = 'run out (${fielderName ?? "fielder"})';
+        } else if (dismissalType == 'Stumped') {
+          dismissedBatter.dismissalText = 'st ${fielderName ?? "keeper"} b ${bowler.name}';
+        } else if (dismissalType == 'Hit Wicket') {
+          dismissedBatter.dismissalText = 'hit wicket b ${bowler.name}';
+        } else {
+          dismissedBatter.dismissalText = '$dismissalType b ${bowler.name}';
+        }
+
         _currentOverDeliveries.add('W');
 
         // Add Commentary
@@ -159,11 +197,22 @@ class _LiveScoringScreenState extends State<LiveScoringScreen> {
           0,
           CommentaryItem(
             overBall: '$_completedOvers.${_ballsInCurrentOver + 1}',
-            text: 'WICKET! ${striker.name} is dismissed! Great bowling by ${bowler.name}.',
+            text: 'WICKET! ${dismissedBatter.name} dismissed ($dismissalType)! Bowling: ${bowler.name}${fielderName != null && fielderName.isNotEmpty ? ", fielder: $fielderName" : ""}.',
             runs: 0,
             isWicket: true,
           ),
         );
+
+        // Assign incoming batter if specified
+        if (incomingBatterIndex != null && incomingBatterIndex >= 0 && incomingBatterIndex < _batterScores.length) {
+          if (outIndex == _nonStrikerIndex) {
+            _nonStrikerIndex = incomingBatterIndex;
+          } else {
+            _strikerIndex = incomingBatterIndex;
+          }
+          _partnershipRuns = 0;
+          _partnershipBalls = 0;
+        }
       } else if (isWide) {
         _currentOverDeliveries.add('Wd');
         _commentary.insert(
@@ -330,6 +379,418 @@ class _LiveScoringScreenState extends State<LiveScoringScreen> {
         ),
       );
     }
+  }
+
+  void _showWicketDialog() {
+    String selectedDismissal = 'Bowled';
+    int outBatterIdx = _strikerIndex;
+    String selectedFielder = '';
+    int? selectedIncomingIndex;
+    final customBatsmanController = TextEditingController();
+    final customFielderController = TextEditingController();
+
+    // Available batters who are not out and not on crease
+    final availableBatters = <Map<String, dynamic>>[];
+    for (int i = 0; i < _batterScores.length; i++) {
+      if (!_batterScores[i].isOut && i != _strikerIndex && i != _nonStrikerIndex) {
+        availableBatters.add({'index': i, 'batter': _batterScores[i]});
+      }
+    }
+    if (availableBatters.isNotEmpty) {
+      selectedIncomingIndex = availableBatters.first['index'];
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF0F172A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final needsFielder = selectedDismissal == 'Caught' ||
+                selectedDismissal == 'Run Out' ||
+                selectedDismissal == 'Stumped' ||
+                selectedDismissal == 'Obstructing Field';
+
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                left: 16,
+                right: 16,
+                top: 16,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: const [
+                            Icon(Icons.flash_on, color: Colors.redAccent),
+                            SizedBox(width: 8),
+                            Text(
+                              'Fall of Wicket & Dismissal',
+                              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white54),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                    const Divider(color: Colors.white24),
+                    const SizedBox(height: 8),
+
+                    // 1. Who is out?
+                    const Text('1. Which Batsman is Out?', style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold, fontSize: 12)),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            onTap: () => setModalState(() => outBatterIdx = _strikerIndex),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                              decoration: BoxDecoration(
+                                color: outBatterIdx == _strikerIndex ? Colors.red.withOpacity(0.3) : const Color(0xFF1E293B),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: outBatterIdx == _strikerIndex ? Colors.redAccent : Colors.white12),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(_batterScores[_strikerIndex].name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                                  const Text('Striker *', style: TextStyle(color: Colors.cyanAccent, fontSize: 10)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: InkWell(
+                            onTap: () => setModalState(() => outBatterIdx = _nonStrikerIndex),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                              decoration: BoxDecoration(
+                                color: outBatterIdx == _nonStrikerIndex ? Colors.red.withOpacity(0.3) : const Color(0xFF1E293B),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: outBatterIdx == _nonStrikerIndex ? Colors.redAccent : Colors.white12),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(_batterScores[_nonStrikerIndex].name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                                  const Text('Non-Striker', style: TextStyle(color: Colors.white60, fontSize: 10)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // 2. Dismissal Type
+                    const Text('2. Dismissal Type', style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold, fontSize: 12)),
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        'Bowled',
+                        'Caught',
+                        'Caught & Bowled',
+                        'Run Out',
+                        'LBW',
+                        'Stumped',
+                        'Hit Wicket',
+                        'Obstructing Field',
+                        'Retired Hurt',
+                      ].map((type) {
+                        final isSel = selectedDismissal == type;
+                        return ChoiceChip(
+                          label: Text(type, style: TextStyle(fontSize: 11, color: isSel ? Colors.white : Colors.white70)),
+                          selected: isSel,
+                          selectedColor: Colors.redAccent,
+                          backgroundColor: const Color(0xFF1E293B),
+                          onSelected: (val) {
+                            if (val) {
+                              setModalState(() {
+                                selectedDismissal = type;
+                                if (type == 'Caught & Bowled') {
+                                  selectedFielder = _bowlerScores[_currentBowlerIndex].name;
+                                }
+                              });
+                            }
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // 3. Fielder Section
+                    if (needsFielder) ...[
+                      Text('3. Fielder who assisted bowler (${widget.teamB.name})', style: const TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold, fontSize: 12)),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: widget.teamB.players.map((p) {
+                          final isSel = selectedFielder == p.name;
+                          return ChoiceChip(
+                            label: Text(p.name, style: TextStyle(fontSize: 10, color: isSel ? Colors.black : Colors.white70)),
+                            selected: isSel,
+                            selectedColor: Colors.cyanAccent,
+                            backgroundColor: const Color(0xFF1E293B),
+                            onSelected: (val) {
+                              setModalState(() {
+                                selectedFielder = val ? p.name : '';
+                                customFielderController.text = selectedFielder;
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: customFielderController,
+                        style: const TextStyle(color: Colors.white, fontSize: 12),
+                        decoration: InputDecoration(
+                          hintText: 'Or enter custom/substitute fielder name...',
+                          hintStyle: const TextStyle(color: Colors.white38, fontSize: 11),
+                          isDense: true,
+                          filled: true,
+                          fillColor: const Color(0xFF1E293B),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                        ),
+                        onChanged: (val) => selectedFielder = val,
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+
+                    // 4. Incoming Batsman Section
+                    const Text('4. Incoming Next Batsman', style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold, fontSize: 12)),
+                    const SizedBox(height: 6),
+                    if (availableBatters.isNotEmpty) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E293B),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: DropdownButton<int>(
+                          value: selectedIncomingIndex,
+                          isExpanded: true,
+                          dropdownColor: const Color(0xFF1E293B),
+                          underline: const SizedBox(),
+                          style: const TextStyle(color: Colors.white, fontSize: 12),
+                          items: availableBatters.map((item) {
+                            final idx = item['index'] as int;
+                            final b = item['batter'] as BatterScore;
+                            return DropdownMenuItem<int>(
+                              value: idx,
+                              child: Text('${b.name} (In Squad)'),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setModalState(() => selectedIncomingIndex = val);
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    TextField(
+                      controller: customBatsmanController,
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                      decoration: InputDecoration(
+                        hintText: '+ Or type custom batsman name to add & enter pitch...',
+                        hintStyle: const TextStyle(color: Colors.white38, fontSize: 11),
+                        isDense: true,
+                        filled: true,
+                        fillColor: const Color(0xFF1E293B),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () {
+                        int? finalIncomingIndex = selectedIncomingIndex;
+                        final customName = customBatsmanController.text.trim();
+                        if (customName.isNotEmpty) {
+                          final newBatter = BatterScore(
+                            playerId: 'custom_${DateTime.now().millisecondsSinceEpoch}',
+                            name: customName,
+                          );
+                          _batterScores.add(newBatter);
+                          finalIncomingIndex = _batterScores.length - 1;
+                        }
+
+                        Navigator.pop(ctx);
+                        _recordBall(
+                          0,
+                          isWicket: true,
+                          dismissalType: selectedDismissal,
+                          fielderName: selectedFielder.isNotEmpty ? selectedFielder : (customFielderController.text.trim().isNotEmpty ? customFielderController.text.trim() : null),
+                          dismissedBatterIndex: outBatterIdx,
+                          incomingBatterIndex: finalIncomingIndex,
+                        );
+                      },
+                      child: const Text('Confirm Wicket & Continue', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showAddCustomBatsmanDialog() {
+    final nameCtrl = TextEditingController();
+    String target = 'striker';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF0F172A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                left: 16,
+                right: 16,
+                top: 16,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Add Custom Batsman / Crease Setup',
+                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      IconButton(icon: const Icon(Icons.close, color: Colors.white54), onPressed: () => Navigator.pop(ctx)),
+                    ],
+                  ),
+                  const Divider(color: Colors.white24),
+                  const SizedBox(height: 8),
+
+                  const Text('Enter Custom Batsman Name:', style: TextStyle(color: Colors.cyanAccent, fontSize: 12, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: nameCtrl,
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    decoration: InputDecoration(
+                      hintText: 'e.g. Ali Raza / Steve Smith / David Warner',
+                      hintStyle: const TextStyle(color: Colors.white38, fontSize: 12),
+                      filled: true,
+                      fillColor: const Color(0xFF1E293B),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  const Text('Assign To Position:', style: TextStyle(color: Colors.cyanAccent, fontSize: 12, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ChoiceChip(
+                          label: const Text('Striker ★', style: TextStyle(fontSize: 11)),
+                          selected: target == 'striker',
+                          selectedColor: Colors.cyanAccent,
+                          onSelected: (val) => setModalState(() => target = 'striker'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ChoiceChip(
+                          label: const Text('Non-Striker', style: TextStyle(fontSize: 11)),
+                          selected: target == 'nonStriker',
+                          selectedColor: Colors.cyanAccent,
+                          onSelected: (val) => setModalState(() => target = 'nonStriker'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ChoiceChip(
+                          label: const Text('Squad Only', style: TextStyle(fontSize: 11)),
+                          selected: target == 'squad',
+                          selectedColor: Colors.cyanAccent,
+                          onSelected: (val) => setModalState(() => target = 'squad'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.cyanAccent,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: () {
+                      final name = nameCtrl.text.trim();
+                      if (name.isEmpty) return;
+                      setState(() {
+                        final newBatter = BatterScore(
+                          playerId: 'custom_${DateTime.now().millisecondsSinceEpoch}',
+                          name: name,
+                        );
+                        _batterScores.add(newBatter);
+                        final newIdx = _batterScores.length - 1;
+                        if (target == 'striker') {
+                          _strikerIndex = newIdx;
+                        } else if (target == 'nonStriker') {
+                          _nonStrikerIndex = newIdx;
+                        }
+                      });
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Added batsman $name successfully!')),
+                      );
+                    },
+                    child: const Text('Add Batsman', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   void _promptChangeBowler() {
@@ -623,16 +1084,37 @@ class _LiveScoringScreenState extends State<LiveScoringScreen> {
                 '${widget.teamA.name} BATTING',
                 style: const TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold, fontSize: 13),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: Colors.blueAccent.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  'Overs: $_completedOvers.$_ballsInCurrentOver / ${widget.totalOvers}',
-                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                ),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: _matchAdsShown >= maxMatchAds ? Colors.red.withOpacity(0.3) : Colors.green.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: _matchAdsShown >= maxMatchAds ? Colors.redAccent : Colors.greenAccent),
+                    ),
+                    child: Text(
+                      'Ads: $_matchAdsShown/$maxMatchAds Max',
+                      style: TextStyle(
+                        color: _matchAdsShown >= maxMatchAds ? Colors.redAccent : Colors.greenAccent,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.blueAccent.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'Overs: $_completedOvers.$_ballsInCurrentOver / ${widget.totalOvers}',
+                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

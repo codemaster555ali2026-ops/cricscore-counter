@@ -49,6 +49,15 @@ class AdMobService {
   static RewardedAd? _rewardedAd;
   static bool isRewardedLoaded = false;
 
+  // Strict Global Match Ads Cap: max 8 all types of ads in entire match
+  static int matchAdsShown = 0;
+  static const int maxAdsPerMatch = 8;
+  static bool get canShowAd => matchAdsShown < maxAdsPerMatch;
+
+  static void resetMatchAds() {
+    matchAdsShown = 0;
+  }
+
   /// Call once inside main() after WidgetsFlutterBinding.ensureInitialized()
   static Future<void> initialize() async {
     try {
@@ -119,8 +128,15 @@ class AdMobService {
     );
   }
 
-  /// Show Interstitial Ad (e.g., when an over completes or match finishes)
+  /// Show Interstitial Ad (strictly max 8 all types of ads in entire match)
   static void showInterstitialAd({Function()? onComplete}) {
+    if (!canShowAd) {
+      debugPrint('[AdMobService] Strict match limit of 8 ads reached. Not showing interstitial ad.');
+      if (onComplete != null) onComplete();
+      return;
+    }
+    matchAdsShown++;
+
     if (isInterstitialLoaded && _interstitialAd != null) {
       _interstitialAd!.show();
       if (onComplete != null) onComplete();
@@ -164,8 +180,14 @@ class AdMobService {
     );
   }
 
-  /// Show Rewarded Video Ad and trigger reward callback
+  /// Show Rewarded Video Ad and trigger reward callback (strictly max 8 all types of ads in entire match)
   static void showRewardedAd({required Function(RewardItem reward) onUserEarnedReward}) {
+    if (!canShowAd) {
+      debugPrint('[AdMobService] Strict match limit of 8 ads reached. Not showing rewarded ad.');
+      return;
+    }
+    matchAdsShown++;
+
     if (isRewardedLoaded && _rewardedAd != null) {
       _rewardedAd!.show(
         onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {

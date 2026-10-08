@@ -9,6 +9,7 @@ interface Props {
 export const AdMobBanner: React.FC<Props> = () => {
   const [closed, setClosed] = useState(false);
   const [activeInterstitial, setActiveInterstitial] = useState<AdInterstitialEvent | null>(null);
+  const [adsCount, setAdsCount] = useState<number>(adMobService.matchAdsShown);
   const [countdown, setCountdown] = useState<number>(3);
   const [canSkip, setCanSkip] = useState<boolean>(false);
   const [showRewarded, setShowRewarded] = useState(false);
@@ -18,8 +19,9 @@ export const AdMobBanner: React.FC<Props> = () => {
 
   // Subscribe to automatic ad events
   useEffect(() => {
-    return adMobService.subscribe((ad) => {
+    return adMobService.subscribe((ad, count) => {
       setActiveInterstitial(ad);
+      setAdsCount(count);
       if (ad) {
         setCountdown(3);
         setCanSkip(false);
@@ -63,11 +65,15 @@ export const AdMobBanner: React.FC<Props> = () => {
           <span className="font-semibold text-white truncate text-xs sm:text-sm">
             Google AdMob Banner (320x50)
           </span>
-          <span className="hidden sm:inline-block text-slate-400 text-[11px] font-mono">
-            ID: ca-app-pub-3940256099942544/6300978111
+          <span className={`inline-flex items-center gap-1 font-bold px-2 py-0.5 rounded-full text-[10px] border ${
+            adsCount >= 8
+              ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+              : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+          }`}>
+            <span>{adsCount >= 8 ? '🔒 Ad Limit Reached:' : 'Match Ads:'} {adsCount}/8 Max</span>
           </span>
-          <span className="hidden md:inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/20">
-            Auto Ads: Start • Over • End ✓
+          <span className="hidden lg:inline-block text-slate-400 text-[11px] font-mono">
+            ID: ca-app-pub-3940256099942544/6300978111
           </span>
         </div>
 
@@ -82,25 +88,28 @@ export const AdMobBanner: React.FC<Props> = () => {
             <span className="hidden xs:inline">AdMob Setup Guide</span>
           </button>
 
-          {/* Quick test triggers */}
+          {/* Quick test triggers (strictly capped at 8) */}
           <button
             onClick={() => adMobService.showInterstitial({ trigger: 'match_start' })}
-            className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 px-2 py-1 rounded-lg text-[10px] font-semibold border border-blue-500/30 transition-colors hidden sm:inline-block"
-            title="Test Match Start Ad"
+            disabled={adsCount >= 8}
+            className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 px-2 py-1 rounded-lg text-[10px] font-semibold border border-blue-500/30 transition-colors hidden sm:inline-block disabled:opacity-30 disabled:cursor-not-allowed"
+            title={adsCount >= 8 ? 'Limit reached (8/8 ads shown)' : 'Test Match Start Ad'}
           >
             Start Ad
           </button>
           <button
             onClick={() => adMobService.showInterstitial({ trigger: 'over_break' })}
-            className="bg-cyan-600/20 hover:bg-cyan-600/40 text-cyan-300 px-2 py-1 rounded-lg text-[10px] font-semibold border border-cyan-500/30 transition-colors hidden sm:inline-block"
-            title="Test Over Break Ad"
+            disabled={adsCount >= 8}
+            className="bg-cyan-600/20 hover:bg-cyan-600/40 text-cyan-300 px-2 py-1 rounded-lg text-[10px] font-semibold border border-cyan-500/30 transition-colors hidden sm:inline-block disabled:opacity-30 disabled:cursor-not-allowed"
+            title={adsCount >= 8 ? 'Limit reached (8/8 ads shown)' : 'Test Over Break Ad'}
           >
             Over Ad
           </button>
           <button
             onClick={() => adMobService.showInterstitial({ trigger: 'match_end' })}
-            className="bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-300 px-2 py-1 rounded-lg text-[10px] font-semibold border border-emerald-500/30 transition-colors hidden sm:inline-block"
-            title="Test Match Concluded Ad"
+            disabled={adsCount >= 8}
+            className="bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-300 px-2 py-1 rounded-lg text-[10px] font-semibold border border-emerald-500/30 transition-colors hidden sm:inline-block disabled:opacity-30 disabled:cursor-not-allowed"
+            title={adsCount >= 8 ? 'Limit reached (8/8 ads shown)' : 'Test Match Concluded Ad'}
           >
             End Ad
           </button>
@@ -209,6 +218,7 @@ export const AdMobBanner: React.FC<Props> = () => {
             <button
               onClick={() => {
                 setRewardEarned(true);
+                adMobService.recordRewardedAdView();
                 setTimeout(() => setShowRewarded(false), 1200);
               }}
               className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2"
