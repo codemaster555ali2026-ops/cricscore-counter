@@ -644,7 +644,7 @@ class _LiveScoringScreenState extends State<LiveScoringScreen> {
             children: [
               Text(
                 '$_totalRuns/$_wickets',
-                style: const TextStyle(fontSize: 48, fontWeight: FontWeight.black, color: Colors.white),
+                style: const TextStyle(fontSize: 48, fontWeight: FontWeight.w900, color: Colors.white),
               ),
               const SizedBox(width: 12),
               Text(
@@ -913,7 +913,7 @@ class _LiveScoringScreenState extends State<LiveScoringScreen> {
       child: Row(
         children: [
           _phasePill('Phase 5: Scorecard', Icons.table_chart, _showScorecardModal, Colors.blueAccent),
-          _phasePill('Phase 4: Commentary', Icons.mic, _showCommentaryModal, Colors.emeraldAccent),
+          _phasePill('Phase 4: Commentary', Icons.mic, _showCommentaryModal, Colors.tealAccent),
           _phasePill('Phase 6: Analytics', Icons.insights, _showAnalyticsModal, Colors.purpleAccent),
           _phasePill('Phase 7: Predictor', Icons.auto_graph, _showPredictorModal, Colors.orangeAccent),
           _phasePill('Phase 8: Win Prob', Icons.query_stats, _showWinProbModal, Colors.cyanAccent),

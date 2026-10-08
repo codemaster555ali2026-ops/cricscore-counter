@@ -37,6 +37,11 @@ jobs:
       - name: 📦 Install Flutter & Dart Dependencies
         run: flutter pub get
 
+      - name: 🛡️ Sanitize Codebase & Fix Known Flutter Enums
+        run: |
+          find lib -name "*.dart" -exec sed -i 's/FontWeight\.black/FontWeight\.w900/g' {} +
+          find lib -name "*.dart" -exec sed -i 's/Colors\.emeraldAccent/Colors\.tealAccent/g' {} +
+
       - name: 🔨 Compile Android Release APK
         run: flutter build apk --release --no-tree-shake-icons --android-skip-build-dependency-validation
 

@@ -13,6 +13,10 @@ workflows:
       - name: Get Flutter packages
         script: |
           flutter packages pub get
+      - name: Sanitize and Validate Flutter Codebase
+        script: |
+          find lib -name "*.dart" -exec sed -i 's/FontWeight\.black/FontWeight\.w900/g' {} +
+          find lib -name "*.dart" -exec sed -i 's/Colors\.emeraldAccent/Colors\.tealAccent/g' {} +
       - name: Build Android Release APK
         script: |
           flutter build apk --release --no-tree-shake-icons --android-skip-build-dependency-validation
