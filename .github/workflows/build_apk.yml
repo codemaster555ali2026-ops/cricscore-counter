@@ -1,0 +1,49 @@
+name: Build Cricket Scoreboard APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch: # Allows manual trigger from GitHub mobile browser or GitHub mobile app
+
+jobs:
+  build-apk:
+    name: Build Android Release APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ☕ Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: 🚀 Set up Flutter SDK (Latest Stable with Kotlin 1.9.22+)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: 🔧 Prepare Android Platform & Wrapper
+        run: |
+          flutter config --no-analytics
+          flutter create . --platforms=android --org=com.cricket.scoreboard
+          chmod +x ./android/gradlew || true
+
+      - name: 📦 Install Flutter & Dart Dependencies
+        run: flutter pub get
+
+      - name: 🔨 Compile Android Release APK
+        run: flutter build apk --release --no-tree-shake-icons
+
+      - name: 📤 Upload Cricket Scoreboard Release APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CricketScoreboard-Release-APK
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 14
