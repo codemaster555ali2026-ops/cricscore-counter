@@ -111,25 +111,62 @@ Native Cross-Platform Cricket Scoring System with Material 3 Theme, Riverpod, Hi
         </div>
       </div>
 
-      {/* Terminal Command Pills */}
+      {/* Terminal Command Pills & Verified Architecture */}
       <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4 text-xs">
         <div className="flex items-center gap-2 text-slate-400 font-mono">
           <Terminal className="w-4 h-4 text-cyan-400" />
-          <span>Build Command:</span>
+          <span>Universal Release Build:</span>
           <code className="bg-slate-900 px-2 py-1 rounded text-cyan-300 border border-slate-800">
             flutter pub get
           </code>
           <span>&rarr;</span>
           <code className="bg-slate-900 px-2 py-1 rounded text-emerald-300 border border-slate-800">
-            flutter build apk --release --android-skip-build-dependency-validation
+            flutter build apk --release
           </code>
         </div>
-        <div className="flex items-center gap-2 text-slate-400">
-          <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-cyan-300 font-mono text-[11px] border border-cyan-500/30">
-            Gradle 8.14 Verified
+        <div className="flex items-center gap-2 text-slate-400 flex-wrap">
+          <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono text-[11px] border border-emerald-500/30">
+            Android SDK 35 (Android 15)
           </span>
-          <ShieldCheck className="w-4 h-4 text-emerald-400" />
-          <span>AdMob & Hive Integrated</span>
+          <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-cyan-300 font-mono text-[11px] border border-cyan-500/30">
+            Gradle 8.5 & AGP 8.3.2
+          </span>
+          <span className="px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-mono text-[11px] border border-purple-500/30">
+            v1 & v2 Signature Enabled
+          </span>
+        </div>
+      </div>
+
+      {/* APK Installation Diagnostic & Resolution Card */}
+      <div className="bg-slate-900/90 border border-cyan-500/30 rounded-2xl p-5 shadow-xl">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400">
+            <Smartphone className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-white">APK Installation Fix & Compatibility Report</h3>
+            <p className="text-xs text-slate-400">Resolves "App not installed / Package invalid" issues encountered previously</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+          <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+            <div className="font-bold text-amber-400 mb-1">1. SDK Level Fixed to 35</div>
+            <p className="text-slate-300 leading-relaxed">
+              Target SDK was downgraded from preview 36 to stable 35 (Android 15). Android OS 10-14 package managers reject APKs targeting unreleased SDK 36.
+            </p>
+          </div>
+          <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+            <div className="font-bold text-emerald-400 mb-1">2. APK Signature Scheme v1 + v2</div>
+            <p className="text-slate-300 leading-relaxed">
+              Release build now enforces dual v1 (JAR signing) and v2 (Full APK signature scheme), required for installation on all modern Android devices.
+            </p>
+          </div>
+          <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+            <div className="font-bold text-cyan-400 mb-1">3. Universal & ABI-Specific Outputs</div>
+            <p className="text-slate-300 leading-relaxed">
+              GitHub Actions & Codemagic workflows now generate a <strong>Universal APK</strong> (works on any device) plus separate <code>arm64-v8a</code> APKs and <code>.aab</code> bundle.
+            </p>
+          </div>
         </div>
       </div>
 

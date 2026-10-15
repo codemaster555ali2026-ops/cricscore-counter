@@ -1,7 +1,7 @@
 workflows:
   android-release-workflow:
-    name: Build Cricket Scoreboard Android APK (Release)
-    max_build_duration: 30
+    name: Build Cricket Scoreboard Android APK & AAB (Release)
+    max_build_duration: 35
     instance_type: linux_x2
     environment:
       flutter: stable
@@ -13,15 +13,15 @@ workflows:
       - name: Get Flutter packages
         script: |
           flutter packages pub get
-      - name: Sanitize and Validate Flutter Codebase
-        script: |
-          find lib -name "*.dart" -exec sed -i 's/FontWeight\.black/FontWeight\.w900/g' {} +
-          find lib -name "*.dart" -exec sed -i 's/Colors\.emeraldAccent/Colors\.tealAccent/g' {} +
-      - name: Build Android Release APK
+      - name: Build Universal Android Release APK
         script: |
           flutter build apk --release --no-tree-shake-icons --android-skip-build-dependency-validation
+      - name: Build Android App Bundle (.aab) for Google Play
+        script: |
+          flutter build appbundle --release --no-tree-shake-icons --android-skip-build-dependency-validation
     artifacts:
       - build/**/outputs/**/*.apk
+      - build/**/outputs/**/*.aab
       - build/**/outputs/**/mapping.txt
     publishing:
       email:

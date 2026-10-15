@@ -158,6 +158,7 @@ export default function App() {
                 onOpenPlayerStats={() => setIsPlayerStatsOpen(true)}
                 onOpenTeamManagement={() => setIsTeamManagementOpen(true)}
                 onClearHistory={handleClearHistory}
+                onSelectPhase={setCurrentPhase}
               />
             )}
 

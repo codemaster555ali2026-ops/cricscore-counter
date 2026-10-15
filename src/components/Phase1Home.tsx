@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Play, RotateCcw, Clock, Shield, Calendar, MapPin, ChevronRight, Trophy, Users, Folder, FolderOpen, Trash2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Play, RotateCcw, Clock, Shield, Calendar, MapPin, ChevronRight, Trophy, Users, Folder, FolderOpen, Trash2, CheckCircle2, AlertCircle, Layers, BarChart3, TrendingUp, Sparkles, FileText, Award, Smartphone, Mic, Table, PieChart, Share2 } from 'lucide-react';
 import { CricketMatch } from '../types/cricket';
 
 interface Props {
@@ -11,6 +11,7 @@ interface Props {
   onOpenPlayerStats: () => void;
   onOpenTeamManagement: () => void;
   onClearHistory?: () => void;
+  onSelectPhase?: (phaseNum: number) => void;
 }
 
 export const Phase1Home: React.FC<Props> = ({
@@ -21,7 +22,8 @@ export const Phase1Home: React.FC<Props> = ({
   onSelectMatch,
   onOpenPlayerStats,
   onOpenTeamManagement,
-  onClearHistory
+  onClearHistory,
+  onSelectPhase
 }) => {
   const [isFolderOpen, setIsFolderOpen] = useState(false);
   const [folderTab, setFolderTab] = useState<'all' | 'live' | 'completed'>('all');
@@ -286,14 +288,70 @@ export const Phase1Home: React.FC<Props> = ({
         )}
       </div>
 
-      {/* Compact Fixtures Strip */}
-      <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between text-xs text-slate-400">
-        <div className="flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-blue-400" />
-          <span className="font-semibold text-slate-300">Upcoming League Tournaments</span>
-          <span className="hidden sm:inline text-slate-500">• 1-20 Overs Configurable</span>
+      {/* 15-PHASE COMPLETE ROADMAP GRID - Directly matching reference picture */}
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+              <Layers className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <span>15-Phase Production Architecture</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                  COMPLETE
+                </span>
+              </h3>
+              <p className="text-xs text-slate-400">
+                Tap any phase card to jump into that dedicated module
+              </p>
+            </div>
+          </div>
         </div>
-        <span className="text-cyan-400 font-mono">AdMob Safe Capped (Max 8/Match)</span>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {[
+            { num: 1, title: 'Match Dashboard', desc: 'Recent matches, quick play & hub controls', icon: '🏠', color: 'border-blue-500/40 hover:border-blue-400' },
+            { num: 2, title: 'Team & Squad Setup', desc: '11 of 11 selection, Captains, WK & Rosters', icon: '👥', color: 'border-emerald-500/40 hover:border-emerald-400' },
+            { num: 3, title: 'Live Scoring Engine', desc: 'Striker, Non-striker, Bowler, strike rotation & keypad', icon: '🏏', color: 'border-cyan-500/40 hover:border-cyan-400' },
+            { num: 4, title: 'Ball-by-Ball Commentary', desc: 'Automated descriptive commentary stream', icon: '🎙️', color: 'border-purple-500/40 hover:border-purple-400' },
+            { num: 5, title: 'Professional Scorecard', desc: 'Detailed batting records, bowling figures & extras', icon: '📋', color: 'border-sky-500/40 hover:border-sky-400' },
+            { num: 6, title: 'Cricket Analytics', desc: 'Run rates, partnerships, dot balls & boundaries', icon: '📊', color: 'border-teal-500/40 hover:border-teal-400' },
+            { num: 7, title: 'Match Predictor', desc: 'Projected score at current RR, 6, 8, 10, 12 RPO', icon: '📈', color: 'border-amber-500/40 hover:border-amber-400' },
+            { num: 8, title: 'Win Probability', desc: 'Dynamic real-time winning percentage meter', icon: '🎯', color: 'border-blue-500/40 hover:border-blue-400' },
+            { num: 9, title: 'Over-by-Over Charts', desc: 'Manhattan chart & Worm run curve', icon: '📉', color: 'border-indigo-500/40 hover:border-indigo-400' },
+            { num: 10, title: 'Match Result & POTM', desc: 'Conclusive win summary & Player of the Match awards', icon: '🏆', color: 'border-yellow-500/40 hover:border-yellow-400' },
+            { num: 11, title: 'Auto-Save & History', desc: 'Instant local persistence & folder archives', icon: '💾', color: 'border-emerald-500/40 hover:border-emerald-400' },
+            { num: 12, title: 'PDF Match Reports', desc: 'Digital match summaries & printable PDF scorecards', icon: '📄', color: 'border-rose-500/40 hover:border-rose-400' },
+            { num: 13, title: 'Share & Backup', desc: 'WhatsApp share cards & JSON match backups', icon: '📤', color: 'border-green-500/40 hover:border-green-400' },
+            { num: 14, title: 'Fireworks & Fanfare', desc: 'Celebration animations for 4s, 6s, 50s & wins', icon: '🎆', color: 'border-fuchsia-500/40 hover:border-fuchsia-400' },
+            { num: 15, title: 'Pure Flutter Engine', desc: 'Native Flutter 3.x, AdMob monetization & Privacy Policy', icon: '📱', color: 'border-cyan-500/40 hover:border-cyan-400' },
+          ].map((phase) => (
+            <button
+              key={phase.num}
+              onClick={() => onSelectPhase && onSelectPhase(phase.num)}
+              className={`text-left p-3.5 rounded-2xl bg-slate-950/70 hover:bg-slate-800/80 border ${phase.color} transition-all transform hover:-translate-y-0.5 active:translate-y-0 flex items-start gap-3 group shadow-md`}
+            >
+              <div className="w-9 h-9 rounded-xl bg-slate-900 border border-slate-700/60 flex items-center justify-center text-lg shrink-0 group-hover:scale-110 transition-transform">
+                {phase.icon}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-1 mb-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-400">
+                    Phase {phase.num}
+                  </span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-cyan-300 transition-colors" />
+                </div>
+                <h4 className="text-xs font-bold text-white truncate group-hover:text-cyan-200 transition-colors">
+                  {phase.title}
+                </h4>
+                <p className="text-[11px] text-slate-400 line-clamp-1 mt-0.5">
+                  {phase.desc}
+                </p>
+              </div>
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

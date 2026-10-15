@@ -23,5 +23,10 @@
     },
     "allowImportingTsExtensions": true,
     "noEmit": true
-  }
+  },
+  "exclude": [
+    "backup_original_project",
+    "dist",
+    "node_modules"
+  ]
 }

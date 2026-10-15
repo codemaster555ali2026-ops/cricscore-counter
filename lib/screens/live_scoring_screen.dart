@@ -1089,14 +1089,14 @@ class _LiveScoringScreenState extends State<LiveScoringScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: _matchAdsShown >= maxMatchAds ? Colors.red.withOpacity(0.3) : Colors.green.withOpacity(0.2),
+                      color: Colors.cyanAccent.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: _matchAdsShown >= maxMatchAds ? Colors.redAccent : Colors.greenAccent),
+                      border: Border.all(color: Colors.cyanAccent.withOpacity(0.4)),
                     ),
                     child: Text(
-                      'Ads: $_matchAdsShown/$maxMatchAds Max',
-                      style: TextStyle(
-                        color: _matchAdsShown >= maxMatchAds ? Colors.redAccent : Colors.greenAccent,
+                      widget.target != null ? 'CHASE: $runsNeeded off $ballsLeft' : '${widget.totalOvers} OVERS',
+                      style: const TextStyle(
+                        color: Colors.cyanAccent,
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                       ),

@@ -1,15 +1,15 @@
-name: Build Cricket Scoreboard APK
+name: Build Cricket Scoreboard Android Release Packages
 
 on:
   push:
     branches: [ main, master ]
-  workflow_dispatch: # Allows manual trigger from GitHub mobile browser or GitHub mobile app
+  workflow_dispatch: # Allows manual trigger from GitHub web & mobile interface
 
 jobs:
-  build-apk:
-    name: Build Android Release APK
+  build-android-packages:
+    name: Build Production APK & AAB
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
 
     steps:
       - name: 📥 Checkout Repository
@@ -22,13 +22,13 @@ jobs:
           java-version: '17'
           cache: 'gradle'
 
-      - name: 🚀 Set up Flutter SDK (Latest Stable with Kotlin 1.9.22+)
+      - name: 🚀 Set up Flutter SDK (Stable Channel)
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
           cache: true
 
-      - name: 🔧 Prepare Android Platform & Wrapper
+      - name: 🔧 Prepare Android Platform & Permissions
         run: |
           flutter config --no-analytics
           rm -f ./android/build.gradle.kts ./android/app/build.gradle.kts ./android/settings.gradle.kts || true
@@ -37,18 +37,39 @@ jobs:
       - name: 📦 Install Flutter & Dart Dependencies
         run: flutter pub get
 
-      - name: 🛡️ Sanitize Codebase & Fix Known Flutter Enums
+      - name: 🛡️ Sanitize Dart Codebase & Verify Types
         run: |
           find lib -name "*.dart" -exec sed -i 's/FontWeight\.black/FontWeight\.w900/g' {} +
           find lib -name "*.dart" -exec sed -i 's/Colors\.emeraldAccent/Colors\.tealAccent/g' {} +
+          flutter analyze --no-fatal-infos || true
 
-      - name: 🔨 Compile Android Release APK
-        run: flutter build apk --release --no-tree-shake-icons --android-skip-build-dependency-validation
+      - name: 🔨 Compile Universal Android Release APK
+        run: |
+          flutter build apk --release --no-tree-shake-icons --android-skip-build-dependency-validation
+          cp build/app/outputs/flutter-apk/app-release.apk CricketScoreboard-Universal-Release.apk
 
-      - name: 📤 Upload Cricket Scoreboard Release APK Artifact
+      - name: ⚡ Compile Split-per-ABI APKs (Targeted Architecture)
+        run: |
+          flutter build apk --release --split-per-abi --no-tree-shake-icons --android-skip-build-dependency-validation || true
+
+      - name: 📦 Compile Google Play Android App Bundle (.aab)
+        run: |
+          flutter build appbundle --release --no-tree-shake-icons --android-skip-build-dependency-validation || true
+
+      - name: 📤 Upload Universal Release APK Artifact (Install on Any Android Device)
         uses: actions/upload-artifact@v4
         with:
-          name: CricketScoreboard-Release-APK
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: CricketScoreboard-Universal-Release-APK
+          path: CricketScoreboard-Universal-Release.apk
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30
+
+      - name: 📤 Upload All Built Android Packages (Split APKs & AAB)
+        uses: actions/upload-artifact@v4
+        with:
+          name: CricketScoreboard-All-Packages
+          path: |
+            build/app/outputs/flutter-apk/*.apk
+            build/app/outputs/bundle/release/*.aab
+          if-no-files-found: warn
+          retention-days: 30

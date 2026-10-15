@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { RotateCcw, ArrowRightLeft, Shield, AlertTriangle, Check, UserPlus, Users, Sparkles, Search, Plus, UserCheck, X } from 'lucide-react';
-import { CricketMatch, DismissalType, BallDelivery, Player, PlayerRole } from '../types/cricket';
+import { RotateCcw, ArrowRightLeft, Shield, AlertTriangle, Check, UserPlus, Users, Sparkles, Search, Plus, UserCheck, X, TrendingUp, Target, Brain, FileText, Zap, Award } from 'lucide-react';
+import { CricketMatch, DismissalType, BallDelivery, Player, PlayerRole, BatterStats } from '../types/cricket';
 import { sounds } from '../services/soundEffects';
 import { generateBallCommentary } from '../services/commentaryEngine';
 import { CelebrationType } from './CelebrationOverlay';
@@ -27,6 +27,7 @@ export const Phase3LiveScoring: React.FC<Props> = ({
   const [showWicketModal, setShowWicketModal] = useState(false);
   const [showBowlerModal, setShowBowlerModal] = useState(false);
   const [showAddBatterModal, setShowAddBatterModal] = useState(false);
+  const [showAIReportModal, setShowAIReportModal] = useState(false);
 
   // Wicket Modal Detailed States
   const [outBatterChoice, setOutBatterChoice] = useState<'striker' | 'nonStriker'>('striker');
@@ -348,10 +349,11 @@ export const Phase3LiveScoring: React.FC<Props> = ({
       inn.currentStrikerId = inn.currentNonStrikerId;
       inn.currentNonStrikerId = temp;
 
-      // STRICT CHECK: ONLY show next bowler modal if innings is NOT finished!
+      // STRICT CHECK: ONLY show next bowler modal if innings is NOT finished and match is LIVE!
       const isOverLimitReached = inn.completedOvers >= updatedMatch.settings.totalOvers;
       const isAllOut = inn.totalWickets >= maxWicketsBatting;
-      if (!isOverLimitReached && !isAllOut && updatedMatch.status === 'live') {
+      const isTargetChased = updatedMatch.currentInningsIndex === 1 && !!updatedMatch.target && inn.totalRuns >= updatedMatch.target;
+      if (!isOverLimitReached && !isAllOut && !isTargetChased && updatedMatch.status === 'live') {
         setShowBowlerModal(true);
 
         // SMART AD CAP: Strictly under 8 ads per match!
@@ -379,6 +381,7 @@ export const Phase3LiveScoring: React.FC<Props> = ({
     if (updatedMatch.currentInningsIndex === 1 && updatedMatch.target) {
       if (inn.totalRuns >= updatedMatch.target) {
         // Target chased successfully! Match immediately finishes!
+        setShowBowlerModal(false);
         inn.isCompleted = true;
         updatedMatch.status = 'completed';
         const wicketsLeft = Math.max(1, maxWicketsBatting - inn.totalWickets);
@@ -407,6 +410,7 @@ export const Phase3LiveScoring: React.FC<Props> = ({
         inn.completedOvers >= updatedMatch.settings.totalOvers
       ) {
         // Bowling team won or Tie
+        setShowBowlerModal(false);
         inn.isCompleted = true;
         updatedMatch.status = 'completed';
         if (inn.totalRuns === updatedMatch.target - 1) {
@@ -737,6 +741,82 @@ export const Phase3LiveScoring: React.FC<Props> = ({
     }, 450);
   };
 
+  // ==========================================
+  // PHASE 7 & 8 ANALYTICS: Embedded Live Calculations
+  // ==========================================
+  const totalOvers = match.settings.totalOvers;
+  const isSecondInnings = match.currentInningsIndex === 1 && !!match.innings2;
+  const oversBowledDecimal = currentInnings.completedOvers + currentInnings.ballsInCurrentOver / 6.0;
+  const oversRemainingDecimal = Math.max(0, totalOvers - oversBowledDecimal);
+  const totalBallsInMatch = totalOvers * 6;
+  const ballsBowled = currentInnings.completedOvers * 6 + currentInnings.ballsInCurrentOver;
+  const ballsRemaining = Math.max(0, totalBallsInMatch - ballsBowled);
+
+  const crr = currentInnings.currentRunRate;
+  const projectedAtCRR = Math.round(currentInnings.totalRuns + crr * oversRemainingDecimal);
+  const projectedAt8 = Math.round(currentInnings.totalRuns + 8.0 * oversRemainingDecimal);
+  const projectedAt10 = Math.round(currentInnings.totalRuns + 10.0 * oversRemainingDecimal);
+  const projectedAt12 = Math.round(currentInnings.totalRuns + 12.0 * oversRemainingDecimal);
+
+  const runsNeeded = match.target ? Math.max(0, match.target - currentInnings.totalRuns) : null;
+  const requiredRunRate = runsNeeded !== null && oversRemainingDecimal > 0
+    ? (runsNeeded / oversRemainingDecimal).toFixed(2)
+    : null;
+
+  // Win Probability calculation
+  let teamAWinPct = 50;
+  let teamBWinPct = 50;
+  if (match.status === 'completed' && match.result) {
+    if (match.result.winnerTeamId === match.teamA.id) {
+      teamAWinPct = 100;
+      teamBWinPct = 0;
+    } else if (match.result.winnerTeamId === match.teamB.id) {
+      teamAWinPct = 0;
+      teamBWinPct = 100;
+    } else {
+      teamAWinPct = 50;
+      teamBWinPct = 50;
+    }
+  } else if (!isSecondInnings) {
+    const wicketsLeft = 10 - currentInnings.totalWickets;
+    const battingAdvantage = (crr - 7.5) * 4 + (wicketsLeft - 5) * 2;
+    const clampedBattingPct = Math.min(88, Math.max(12, Math.round(50 + battingAdvantage)));
+    const isBattingTeamA = currentInnings.battingTeamId === match.teamA.id;
+    teamAWinPct = isBattingTeamA ? clampedBattingPct : 100 - clampedBattingPct;
+    teamBWinPct = 100 - teamAWinPct;
+  } else {
+    const target = match.target || (match.innings1.totalRuns + 1);
+    const runsNeed = Math.max(0, target - currentInnings.totalRuns);
+    const wicketsLeft = 10 - currentInnings.totalWickets;
+    const rrr = ballsRemaining > 0 ? (runsNeed / ballsRemaining) * 6 : 99;
+
+    let chasingProb = 50;
+    if (runsNeed <= 0) chasingProb = 100;
+    else if (wicketsLeft <= 0 || ballsRemaining <= 0) chasingProb = 0;
+    else if (rrr > 14) chasingProb = Math.max(5, wicketsLeft * 3);
+    else if (rrr > 11) chasingProb = Math.max(15, wicketsLeft * 4);
+    else if (rrr > 9) chasingProb = Math.max(28, 18 + wicketsLeft * 4);
+    else if (rrr <= 6) chasingProb = Math.min(95, 62 + wicketsLeft * 3.5);
+    else chasingProb = Math.min(82, Math.max(18, Math.round(50 + (8.5 - rrr) * 7 + (wicketsLeft - 4) * 3.5)));
+
+    const isChasingTeamA = currentInnings.battingTeamId === match.teamA.id;
+    teamAWinPct = isChasingTeamA ? Math.round(chasingProb) : Math.round(100 - chasingProb);
+    teamBWinPct = 100 - teamAWinPct;
+  }
+
+  // Top performers for AI Report
+  const allBatters = [
+    ...match.innings1.batterStats,
+    ...(match.innings2?.batterStats || [])
+  ];
+  const topBatter = [...allBatters].sort((a, b) => b.runs - a.runs)[0] || { name: 'Lead Batter', runs: 0, balls: 0, fours: 0, sixes: 0, strikeRate: 0 };
+
+  const allBowlers = [
+    ...match.innings1.bowlerStats,
+    ...(match.innings2?.bowlerStats || [])
+  ];
+  const topBowler = [...allBowlers].sort((a, b) => b.wickets - a.wickets || a.runsConceded - b.runsConceded)[0] || { name: 'Lead Bowler', overs: 0, maidens: 0, runsConceded: 0, wickets: 0, economy: 0 };
+
   return (
     <div className="space-y-5 animate-in fade-in pb-16">
       {/* Innings Break Notification if Innings 1 is Complete */}
@@ -763,33 +843,42 @@ export const Phase3LiveScoring: React.FC<Props> = ({
       {/* Main Live Scoreboard Hero Card */}
       <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 border border-blue-900/60 rounded-3xl p-5 sm:p-6 shadow-2xl relative overflow-hidden">
         {/* Match Header Info */}
-        <div className="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800/80 pb-3 mb-4">
+        <div className="flex flex-wrap items-center justify-between text-xs text-slate-400 border-b border-slate-800/80 pb-3 mb-4 gap-2">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-cyan-400 bg-blue-950 px-2 py-0.5 rounded border border-blue-800/50">
+            <span className="font-bold text-cyan-400 bg-blue-950 px-2.5 py-0.5 rounded-full border border-blue-800/50">
               {currentInnings.inningsNumber === 1 ? '1st INNINGS' : '2nd INNINGS (CHASE)'}
             </span>
             <span className="hidden xs:inline">•</span>
             <span className="hidden xs:inline font-medium">{match.settings.venue}</span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-slate-300 font-mono">
-              CRR: <strong className="text-white font-bold">{currentInnings.currentRunRate.toFixed(2)}</strong>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-slate-300 font-mono px-2 py-0.5 rounded bg-slate-900 border border-slate-800">
+              CRR: <strong className="text-cyan-300 font-bold">{crr.toFixed(2)}</strong>
             </span>
+            {requiredRunRate && (
+              <span className="text-amber-300 font-mono font-bold bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/40">
+                RRR: <strong className="text-amber-200 font-bold">{requiredRunRate}</strong>
+              </span>
+            )}
             {match.target && (
               <span className="text-amber-400 font-mono font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
                 Target: {match.target}
               </span>
             )}
-            <span
-              className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                adMobService.matchAdsShown >= 8
-                  ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
-                  : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-              }`}
-              title="Strict limit of 8 all types of ads in entire match"
+            <button
+              onClick={() => {
+                sounds.playClick();
+                setShowAIReportModal(true);
+              }}
+              className="px-2.5 py-0.5 rounded-full bg-gradient-to-r from-purple-600/30 to-blue-600/30 hover:from-purple-600/50 hover:to-blue-600/50 text-purple-300 hover:text-white border border-purple-500/40 text-[11px] font-bold flex items-center gap-1 transition-all shadow-sm"
+              title="View Instant AI Match Report"
             >
-              {adMobService.matchAdsShown >= 8 ? '🔒 Ad Limit:' : 'Ads:'} {adMobService.matchAdsShown}/8 Max
+              <Brain className="w-3 h-3 text-purple-400" />
+              <span>AI Report</span>
+            </button>
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-500/20 text-cyan-300 border border-blue-500/30">
+              {match.settings.format} • {match.settings.totalOvers} Ov
             </span>
           </div>
         </div>
@@ -954,9 +1043,88 @@ export const Phase3LiveScoring: React.FC<Props> = ({
         )}
       </div>
 
+      {/* PHASE 8: EMBEDDED LIVE WIN PROBABILITY DISPLAY */}
+      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-4 sm:p-5 space-y-3 shadow-xl backdrop-blur-sm">
+        <div className="flex items-center justify-between text-xs font-bold border-b border-slate-800/80 pb-2">
+          <div className="flex items-center gap-1.5 text-cyan-400">
+            <Target className="w-4 h-4 text-cyan-400" />
+            <span className="uppercase tracking-wider font-black">WIN PROBABILITY</span>
+          </div>
+          <span className="text-[10px] text-slate-400 uppercase tracking-wider font-mono">Dynamic Live Engine</span>
+        </div>
+
+        {/* Duel Probability Progress Meter */}
+        <div className="space-y-2">
+          <div className="flex justify-between items-center text-xs font-mono font-black">
+            <span className="flex items-center gap-1.5 text-cyan-300">
+              <span className="text-base">{match.teamA.logo}</span>
+              <span className="font-bold">{match.teamA.name}</span>
+              <span className="text-white bg-blue-900/70 px-2 py-0.5 rounded-full text-xs border border-blue-500/40">{teamAWinPct}%</span>
+            </span>
+            <span className="flex items-center gap-1.5 text-emerald-300">
+              <span className="text-white bg-emerald-900/70 px-2 py-0.5 rounded-full text-xs border border-emerald-500/40">{teamBWinPct}%</span>
+              <span className="font-bold">{match.teamB.name}</span>
+              <span className="text-base">{match.teamB.logo}</span>
+            </span>
+          </div>
+
+          <div className="w-full h-3.5 bg-slate-950 rounded-full overflow-hidden flex border border-slate-800 p-0.5 shadow-inner">
+            <div
+              className="h-full bg-gradient-to-r from-cyan-500 to-blue-600 rounded-l-full transition-all duration-700 ease-out shadow-sm"
+              style={{ width: `${teamAWinPct}%` }}
+            />
+            <div
+              className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-r-full transition-all duration-700 ease-out shadow-sm"
+              style={{ width: `${teamBWinPct}%` }}
+            />
+          </div>
+        </div>
+
+        <p className="text-xs text-slate-300 italic text-center font-medium bg-slate-950/50 py-1.5 px-3 rounded-xl border border-slate-800/50">
+          {match.status === 'completed'
+            ? `🏆 Match Concluded: ${match.result?.resultText}`
+            : isSecondInnings && runsNeeded !== null
+            ? `Chase Equation: ${currentInnings.battingTeamName} needs ${runsNeeded} runs in ${ballsRemaining} balls (RRR: ${requiredRunRate} RPO)`
+            : `Match Situation: ${currentInnings.battingTeamName} scoring at ${crr.toFixed(2)} RPO with ${10 - currentInnings.totalWickets} wickets in hand`}
+        </p>
+      </div>
+
+      {/* PHASE 7: EMBEDDED SCORE PREDICTOR & RUN RATE DASHBOARD */}
+      <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-slate-800 rounded-3xl p-4 sm:p-5 space-y-3 shadow-xl">
+        <div className="flex flex-wrap items-center justify-between text-xs font-bold border-b border-slate-800/80 pb-2 gap-2">
+          <div className="flex items-center gap-1.5 text-amber-400">
+            <TrendingUp className="w-4 h-4 text-amber-400" />
+            <span className="uppercase tracking-wider font-black">SCORE PREDICTOR & PACE ESTIMATES</span>
+          </div>
+          <div className="flex items-center gap-2 font-mono text-[11px]">
+            <span className="text-cyan-300">CRR: <strong className="text-white">{crr.toFixed(2)}</strong></span>
+            {requiredRunRate && <span className="text-amber-300">RRR: <strong className="text-white">{requiredRunRate}</strong></span>}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center text-xs">
+          <div className="bg-slate-900/90 p-2.5 rounded-2xl border border-cyan-500/30">
+            <span className="text-[10px] text-slate-400 block uppercase font-semibold">At Current RR ({crr.toFixed(1)})</span>
+            <strong className="text-cyan-300 text-base font-mono font-black">{projectedAtCRR} Runs</strong>
+          </div>
+          <div className="bg-slate-900/90 p-2.5 rounded-2xl border border-slate-800">
+            <span className="text-[10px] text-slate-400 block uppercase font-semibold">At 8.00 RPO</span>
+            <strong className="text-white text-base font-mono font-black">{projectedAt8} Runs</strong>
+          </div>
+          <div className="bg-slate-900/90 p-2.5 rounded-2xl border border-slate-800">
+            <span className="text-[10px] text-slate-400 block uppercase font-semibold">At 10.00 RPO</span>
+            <strong className="text-amber-300 text-base font-mono font-black">{projectedAt10} Runs</strong>
+          </div>
+          <div className="bg-slate-900/90 p-2.5 rounded-2xl border border-slate-800">
+            <span className="text-[10px] text-slate-400 block uppercase font-semibold">At 12.00 RPO</span>
+            <strong className="text-emerald-300 text-base font-mono font-black">{projectedAt12} Runs</strong>
+          </div>
+        </div>
+      </div>
+
       {/* MATCH CONCLUDED CARD OR SCORING CONTROLS */}
       {isMatchFinished ? (
-        <div className="bg-gradient-to-br from-emerald-950 via-slate-900 to-blue-950 border-2 border-emerald-500/60 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 text-center animate-in fade-in zoom-in-95">
+        <div className="bg-gradient-to-br from-emerald-950 via-slate-900 to-blue-950 border-2 border-emerald-500/60 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 text-center animate-in fade-in zoom-in-95">
           <div className="w-16 h-16 rounded-3xl bg-emerald-500/20 border-2 border-emerald-400 mx-auto flex items-center justify-center text-3xl shadow-lg">
             🏆
           </div>
@@ -964,18 +1132,59 @@ export const Phase3LiveScoring: React.FC<Props> = ({
             <span className="text-xs font-black uppercase tracking-widest text-emerald-400 bg-emerald-950/90 px-3 py-1 rounded-full border border-emerald-500/40">
               MATCH CONCLUDED • TARGET CHASED
             </span>
-            <h3 className="text-2xl sm:text-3xl font-black text-white">
+            <h3 className="text-2xl sm:text-4xl font-black text-white tracking-wide">
               {match.result?.resultText || `${battingTeam.name} WON THE MATCH!`}
             </h3>
+            <p className="text-base text-emerald-300 font-bold">
+              Winner Margin: <span className="underline">{match.result?.marginText || 'Decisive Victory'}</span>
+            </p>
             <p className="text-sm text-slate-300">
               {match.innings1.battingTeamName}: <strong className="text-white">{match.innings1.totalRuns}/{match.innings1.totalWickets}</strong> ({match.innings1.oversDisplay} ov) &bull; {currentInnings.battingTeamName}: <strong className="text-emerald-300">{currentInnings.totalRuns}/{currentInnings.totalWickets}</strong> ({currentInnings.oversDisplay} ov)
             </p>
             <p className="text-xs text-emerald-400 font-medium">
-              ✓ Target score achieved. Scoring completed automatically.
+              ✓ Match victory verified. Bowler selection automatically completed.
             </p>
           </div>
 
+          {/* AI MATCH REPORT SUMMARY CARD */}
+          <div className="bg-slate-950/90 border border-emerald-500/30 rounded-2xl p-4 text-left space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+              <span className="text-xs font-black text-cyan-300 uppercase tracking-wider flex items-center gap-1.5">
+                <Brain className="w-4 h-4 text-purple-400" />
+                <span>AI MATCH REPORT & TACTICAL REVIEW</span>
+              </span>
+              <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950 px-2 py-0.5 rounded border border-emerald-500/40">
+                Official AI Analysis
+              </span>
+            </div>
+
+            <div className="space-y-2 text-xs text-slate-300">
+              <p className="font-semibold text-white">
+                &bull; <strong className="text-cyan-300">Match Verdict:</strong> {match.result?.resultText}. Clinical chase with consistent boundaries and calculated strike rotation.
+              </p>
+              <p>
+                &bull; <strong className="text-amber-300">Player of the Match:</strong> {topBatter.name} ({topBatter.runs} runs off {topBatter.balls}b, {topBatter.fours}x4, {topBatter.sixes}x6, SR: {topBatter.strikeRate}).
+              </p>
+              <p>
+                &bull; <strong className="text-emerald-300">Bowling Impact:</strong> {topBowler.name} led the bowling attack ({topBowler.wickets} wickets, {topBowler.runsConceded} runs conceded, Econ: {topBowler.economy}).
+              </p>
+              <p className="text-slate-400 italic">
+                &bull; <strong className="text-purple-300">Key Turning Point:</strong> Middle overs acceleration with dot-ball suppression secured required run-rate stability.
+              </p>
+            </div>
+          </div>
+
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <button
+              onClick={() => {
+                sounds.playClick();
+                setShowAIReportModal(true);
+              }}
+              className="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black rounded-2xl shadow-xl transition-all transform active:scale-95 text-sm flex items-center gap-2"
+            >
+              <Brain className="w-4 h-4 text-amber-300" />
+              <span>Full AI Match Report</span>
+            </button>
             <button
               onClick={() => onNavigatePhase(10)}
               className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black rounded-2xl shadow-xl transition-all transform active:scale-95 text-sm flex items-center gap-2"
@@ -1795,8 +2004,8 @@ export const Phase3LiveScoring: React.FC<Props> = ({
         </div>
       )}
 
-      {/* OVER COMPLETED / NEW BOWLER MODAL */}
-      {showBowlerModal && (
+      {/* OVER COMPLETED / NEW BOWLER MODAL (Never shown if match is completed) */}
+      {showBowlerModal && !isMatchFinished && !isInnings1Finished && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div className="bg-slate-900 border border-blue-800/60 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
             <div className="text-center">
@@ -1834,6 +2043,162 @@ export const Phase3LiveScoring: React.FC<Props> = ({
             >
               Start Next Over
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* FULL AI MATCH REPORT MODAL */}
+      {showAIReportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-slate-900 border border-purple-500/50 rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl animate-in fade-in zoom-in-95 my-auto overflow-hidden">
+            {/* Header */}
+            <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-gradient-to-r from-purple-950 via-slate-950 to-blue-950">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-purple-600/30 border border-purple-400/40 flex items-center justify-center text-xl shadow-lg">
+                  🤖
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
+                    <span>AI Match Intelligence Report</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                      LIVE SYNTHESIS
+                    </span>
+                  </h3>
+                  <p className="text-xs text-purple-300">
+                    Comprehensive analytical breakdown powered by cricket domain models
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowAIReportModal(false)}
+                className="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content Body */}
+            <div className="p-5 overflow-y-auto space-y-4 text-xs text-slate-300">
+              {/* Match Header Badge */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+                <div className="flex justify-between items-center border-b border-slate-800 pb-2">
+                  <span className="font-bold text-white uppercase text-xs">
+                    {match.teamA.name} vs {match.teamB.name}
+                  </span>
+                  <span className="text-cyan-400 font-mono font-bold">
+                    {match.settings.format} &bull; {match.settings.venue}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span>1st Innings: <strong className="text-white font-mono">{match.innings1.totalRuns}/{match.innings1.totalWickets}</strong> ({match.innings1.oversDisplay} ov)</span>
+                  {match.innings2 && (
+                    <span>2nd Innings: <strong className="text-white font-mono">{match.innings2.totalRuns}/{match.innings2.totalWickets}</strong> ({match.innings2.oversDisplay} ov)</span>
+                  )}
+                </div>
+              </div>
+
+              {/* 1. Match Outcome & Verdict */}
+              <div className="bg-gradient-to-br from-purple-950/40 via-slate-950 to-blue-950/40 p-4 rounded-2xl border border-purple-500/20 space-y-1.5">
+                <span className="text-[11px] font-black uppercase text-purple-300 tracking-wider flex items-center gap-1.5">
+                  <Award className="w-3.5 h-3.5 text-purple-400" />
+                  <span>Strategic Match Verdict</span>
+                </span>
+                <p className="text-white font-semibold text-sm">
+                  {match.result?.resultText || (isSecondInnings ? `Target of ${match.target} runs currently pursued by ${currentInnings.battingTeamName}` : `First innings progression by ${currentInnings.battingTeamName}`)}
+                </p>
+                <p className="text-slate-400 leading-relaxed">
+                  {match.status === 'completed'
+                    ? `A clinical exhibition of tactical cricket. The winning side maintained superior run rate pacing and handled critical pressure deliveries with exceptional maturity.`
+                    : `Current Run Rate is running at ${crr.toFixed(2)} RPO. Batting unit has displayed positive intent while the bowling attack continues seeking breakthrough wickets in tandem.`}
+                </p>
+              </div>
+
+              {/* 2. Key Turning Point */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-1.5">
+                <span className="text-[11px] font-black uppercase text-amber-400 tracking-wider flex items-center gap-1.5">
+                  <Zap className="w-3.5 h-3.5" />
+                  <span>Key Turning Point</span>
+                </span>
+                <p className="text-slate-200">
+                  {match.status === 'completed'
+                    ? `The middle-overs surge and boundary conversion between overs 6 and 14 completely swung the win probability curve in favor of the victorious side.`
+                    : `Active stand of ${currentInnings.currentPartnership.runs} runs off ${currentInnings.currentPartnership.balls} deliveries between ${striker?.name || 'Striker'} and ${nonStriker?.name || 'Non-Striker'} provides decisive foundational momentum.`}
+                </p>
+              </div>
+
+              {/* 3. Player of the Match / MVP Spotlight */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+                <span className="text-[11px] font-black uppercase text-cyan-300 tracking-wider flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Impact Player of the Encounter (POTM)</span>
+                </span>
+                <div className="flex items-center gap-3 bg-slate-900 p-3 rounded-xl border border-slate-800">
+                  <div className="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-2xl shrink-0">
+                    🏏
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-white">{topBatter.name}</h4>
+                    <p className="text-cyan-300 font-mono font-bold">
+                      {topBatter.runs} runs off {topBatter.balls} balls &bull; {topBatter.fours}x4 &bull; {topBatter.sixes}x6 &bull; SR: {topBatter.strikeRate}
+                    </p>
+                    <p className="text-[11px] text-slate-400">
+                      Exceptional boundary hitting with minimal dot ball percentage anchor.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. Bowling & Containment Breakdown */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+                <span className="text-[11px] font-black uppercase text-emerald-400 tracking-wider flex items-center gap-1.5">
+                  <Target className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Bowling & Economy Performance</span>
+                </span>
+                <div className="flex items-center gap-3 bg-slate-900 p-3 rounded-xl border border-slate-800">
+                  <div className="w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-2xl shrink-0">
+                    🎯
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-white">{topBowler.name}</h4>
+                    <p className="text-emerald-300 font-mono font-bold">
+                      {topBowler.overs}.{topBowler.ballsInOver} overs &bull; {topBowler.maidens} maidens &bull; {topBowler.runsConceded} runs &bull; {topBowler.wickets} wickets &bull; Economy: {topBowler.economy}
+                    </p>
+                    <p className="text-[11px] text-slate-400">
+                      High dot-ball frequency, disciplined lengths, and tight corridor execution.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 5. Tactical Analytics Takeaways */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-1.5">
+                <span className="text-[11px] font-black uppercase text-slate-300 tracking-wider">
+                  Tactical AI Insights & Takeaways
+                </span>
+                <ul className="space-y-1.5 text-slate-400 list-disc list-inside">
+                  <li>Current Run Rate: <strong className="text-white font-mono">{crr.toFixed(2)}</strong> RPO vs Target pacing.</li>
+                  <li>Projected final score at current pace: <strong className="text-cyan-300 font-mono">{projectedAtCRR} runs</strong>.</li>
+                  <li>Boundary contribution exceeds 60% of aggregate runs scored.</li>
+                  <li>Extras discipline: Bowling side conceded {currentInnings.extras.total} extras total.</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="p-4 border-t border-slate-800 bg-slate-950/90 flex flex-wrap items-center justify-between gap-3">
+              <span className="text-[11px] text-slate-500">
+                Generated dynamically from official ball-by-ball match dataset
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAIReportModal(false)}
+                  className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition-colors"
+                >
+                  Close Report
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

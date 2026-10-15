@@ -17,7 +17,7 @@ def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '
 
 android {
     namespace "com.cricket.scoreboard.cricket_scoreboard_15phases"
-    compileSdk = 36
+    compileSdk = 35
     ndkVersion flutter.ndkVersion
 
     compileOptions {
@@ -36,15 +36,23 @@ android {
     defaultConfig {
         applicationId "com.cricket.scoreboard.cricket_scoreboard_15phases"
         minSdkVersion 21
-        targetSdkVersion 36
+        targetSdkVersion 35
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true
     }
 
+    signingConfigs {
+        release {
+            initWith(signingConfigs.debug)
+            v1SigningEnabled true
+            v2SigningEnabled true
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
             minifyEnabled false
             shrinkResources false
         }
