@@ -40,12 +40,6 @@ jobs:
       - name: 📦 Install Flutter & Dart Dependencies
         run: flutter pub get
 
-      - name: 🩹 Patch Plugin Compatibility for Gradle 9
-        run: |
-          echo "Patching Gradle 9 configurations.all compatibility in pub-cache plugins..."
-          find "${PUB_CACHE:-$HOME/.pub-cache}" -name "build.gradle" -exec sed -i 's/configurations\.all/configurations/g' {} + 2>/dev/null || true
-          find "$HOME/.pub-cache" -name "build.gradle" -exec sed -i 's/configurations\.all/configurations/g' {} + 2>/dev/null || true
-
       - name: 🛡️ Sanitize Codebase & Fix Known Flutter Enums
         run: |
           find lib -name "*.dart" -exec sed -i 's/FontWeight\.black/FontWeight\.w900/g' {} +
@@ -54,7 +48,7 @@ jobs:
 
       - name: 🔨 Compile Android Release APK
         run: |
-          flutter build apk --release --no-tree-shake-icons --android-skip-build-dependency-validation
+          flutter build apk --release --no-tree-shake-icons
           cp build/app/outputs/flutter-apk/app-release.apk CricketScoreboard-Universal-Release.apk
 
       - name: 📤 Upload Cricket Scoreboard Release APK Artifact

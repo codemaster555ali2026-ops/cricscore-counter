@@ -40,12 +40,6 @@ jobs:
       - name: 📦 Install Flutter & Dart Dependencies
         run: flutter pub get
 
-      - name: 🩹 Patch Plugin Compatibility for Gradle 9
-        run: |
-          echo "Patching Gradle 9 configurations.all compatibility in pub-cache plugins..."
-          find "${PUB_CACHE:-$HOME/.pub-cache}" -name "build.gradle" -exec sed -i 's/configurations\.all/configurations/g' {} + 2>/dev/null || true
-          find "$HOME/.pub-cache" -name "build.gradle" -exec sed -i 's/configurations\.all/configurations/g' {} + 2>/dev/null || true
-
       - name: 🛡️ Verify Types & Analyze Codebase
         run: |
           find lib -name "*.dart" -exec sed -i 's/FontWeight\.black/FontWeight\.w900/g' {} +
@@ -54,7 +48,7 @@ jobs:
 
       - name: 🔨 Compile Universal Android Release APK
         run: |
-          flutter build apk --release --no-tree-shake-icons --android-skip-build-dependency-validation
+          flutter build apk --release --no-tree-shake-icons
           if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
             cp build/app/outputs/flutter-apk/app-release.apk CricketScoreboard-Universal-Release.apk
             echo "✅ Successfully generated CricketScoreboard-Universal-Release.apk"
@@ -66,11 +60,11 @@ jobs:
 
       - name: ⚡ Compile Split-per-ABI APKs (Targeted Architecture)
         run: |
-          flutter build apk --release --split-per-abi --no-tree-shake-icons --android-skip-build-dependency-validation || true
+          flutter build apk --release --split-per-abi --no-tree-shake-icons || true
 
       - name: 📦 Compile Google Play Android App Bundle (.aab)
         run: |
-          flutter build appbundle --release --no-tree-shake-icons --android-skip-build-dependency-validation || true
+          flutter build appbundle --release --no-tree-shake-icons || true
 
       - name: 📤 Upload Universal Release APK Artifact (Install on Any Android Device)
         uses: actions/upload-artifact@v4

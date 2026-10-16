@@ -3,18 +3,6 @@ allprojects {
         google()
         mavenCentral()
     }
-
-    // Gradle 9 compatibility shim for plugins accessing configurations.all as an iterable property
-    subprojects {
-        afterEvaluate { project ->
-            if (project.hasProperty('configurations')) {
-                try {
-                    project.configurations.metaClass.getAll = { -> delegate }
-                } catch (Exception ignored) {
-                }
-            }
-        }
-    }
 }
 
 rootProject.buildDir = '../build'
