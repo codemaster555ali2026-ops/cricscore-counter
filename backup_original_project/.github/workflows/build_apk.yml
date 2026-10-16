@@ -48,7 +48,7 @@ jobs:
 
       - name: 🔨 Compile Android Release APK
         run: |
-          flutter build apk --release --no-tree-shake-icons
+          flutter build apk --release --no-tree-shake-icons --android-skip-build-dependency-validation
           cp build/app/outputs/flutter-apk/app-release.apk CricketScoreboard-Universal-Release.apk
 
       - name: 📤 Upload Cricket Scoreboard Release APK Artifact

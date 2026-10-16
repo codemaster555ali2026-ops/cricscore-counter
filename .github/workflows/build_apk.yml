@@ -48,7 +48,7 @@ jobs:
 
       - name: 🔨 Compile Universal Android Release APK
         run: |
-          flutter build apk --release --no-tree-shake-icons
+          flutter build apk --release --no-tree-shake-icons --android-skip-build-dependency-validation
           if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
             cp build/app/outputs/flutter-apk/app-release.apk CricketScoreboard-Universal-Release.apk
             echo "✅ Successfully generated CricketScoreboard-Universal-Release.apk"
@@ -60,11 +60,11 @@ jobs:
 
       - name: ⚡ Compile Split-per-ABI APKs (Targeted Architecture)
         run: |
-          flutter build apk --release --split-per-abi --no-tree-shake-icons || true
+          flutter build apk --release --split-per-abi --no-tree-shake-icons --android-skip-build-dependency-validation || true
 
       - name: 📦 Compile Google Play Android App Bundle (.aab)
         run: |
-          flutter build appbundle --release --no-tree-shake-icons || true
+          flutter build appbundle --release --no-tree-shake-icons --android-skip-build-dependency-validation || true
 
       - name: 📤 Upload Universal Release APK Artifact (Install on Any Android Device)
         uses: actions/upload-artifact@v4
