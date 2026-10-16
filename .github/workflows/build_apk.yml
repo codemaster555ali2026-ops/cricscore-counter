@@ -40,6 +40,12 @@ jobs:
       - name: 📦 Install Flutter & Dart Dependencies
         run: flutter pub get
 
+      - name: 🩹 Patch Plugin Compatibility for Gradle 9
+        run: |
+          echo "Patching Gradle 9 configurations.all compatibility in pub-cache plugins..."
+          find "${PUB_CACHE:-$HOME/.pub-cache}" -name "build.gradle" -exec sed -i 's/configurations\.all/configurations/g' {} + 2>/dev/null || true
+          find "$HOME/.pub-cache" -name "build.gradle" -exec sed -i 's/configurations\.all/configurations/g' {} + 2>/dev/null || true
+
       - name: 🛡️ Verify Types & Analyze Codebase
         run: |
           find lib -name "*.dart" -exec sed -i 's/FontWeight\.black/FontWeight\.w900/g' {} +
