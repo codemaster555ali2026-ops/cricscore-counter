@@ -28,6 +28,18 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: 📱 Ensure Android SDK Platform 36 & Build-Tools Installed
+        run: |
+          echo "Installing Android SDK Platform 36 and Build-Tools..."
+          SDK_DIR="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          if [ -n "$SDK_DIR" ] && [ -x "$SDK_DIR/cmdline-tools/latest/bin/sdkmanager" ]; then
+            yes | "$SDK_DIR/cmdline-tools/latest/bin/sdkmanager" --licenses || true
+            "$SDK_DIR/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0" || true
+          elif command -v sdkmanager &> /dev/null; then
+            yes | sdkmanager --licenses || true
+            sdkmanager "platforms;android-36" "build-tools;36.0.0" || true
+          fi
+
       - name: 🔧 Prepare Android Platform & Gradle Wrapper
         run: |
           flutter config --no-analytics

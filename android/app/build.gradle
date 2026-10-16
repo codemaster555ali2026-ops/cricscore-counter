@@ -17,7 +17,7 @@ def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '
 
 android {
     namespace "com.cricket.scoreboard.cricket_scoreboard_15phases"
-    compileSdk = 35
+    compileSdk = 36
     ndkVersion flutter.ndkVersion
 
     compileOptions {

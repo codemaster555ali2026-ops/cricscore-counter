@@ -10,6 +10,9 @@ workflows:
       - name: Set up local.properties
         script: |
           echo "flutter.sdk=$FLUTTER_ROOT" > "$CM_BUILD_DIR/android/local.properties"
+      - name: Ensure Android SDK 36
+        script: |
+          yes | sdkmanager "platforms;android-36" "build-tools;36.0.0" || true
       - name: Get Flutter packages
         script: |
           flutter packages pub get

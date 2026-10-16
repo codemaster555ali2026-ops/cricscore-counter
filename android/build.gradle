@@ -11,6 +11,17 @@ allprojects {
                     project.configurations.metaClass.getAll = { -> delegate }
                 } catch (Throwable ignored) {}
             }
+            if (project.hasProperty('android')) {
+                try {
+                    project.android {
+                        compileSdk = 36
+                    }
+                } catch (Throwable ignored) {
+                    try {
+                        project.android.compileSdkVersion 36
+                    } catch (Throwable ignored2) {}
+                }
+            }
         }
     }
 }
