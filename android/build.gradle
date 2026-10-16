@@ -3,6 +3,16 @@ allprojects {
         google()
         mavenCentral()
     }
+
+    subprojects {
+        afterEvaluate { project ->
+            if (project.hasProperty('configurations')) {
+                try {
+                    project.configurations.metaClass.getAll = { -> delegate }
+                } catch (Throwable ignored) {}
+            }
+        }
+    }
 }
 
 rootProject.buildDir = '../build'
