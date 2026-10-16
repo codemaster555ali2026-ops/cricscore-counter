@@ -34,7 +34,7 @@ class AdMobService {
   static const String _testNativeAndroid = 'ca-app-pub-3940256099942544/2247696110';
   static const String _testNativeIOS = 'ca-app-pub-3940256099942544/3986624511';
 
-  // Rewarded Video Ad Units (Optional extra utility)
+  // Rewarded Video Ad Units
   static const String _testRewardedAndroid = 'ca-app-pub-3940256099942544/5224354917';
   static const String _testRewardedIOS = 'ca-app-pub-3940256099942544/1712485313';
 
@@ -139,6 +139,17 @@ class AdMobService {
     );
   }
 
+  /// Backward compatible Banner Ad Creator expected by ad_banner_widget.dart
+  static BannerAd createBannerAd({
+    required Function() onAdLoaded,
+    Function(LoadAdError)? onAdFailed,
+  }) {
+    return createAdaptiveBannerAd(
+      onAdLoaded: onAdLoaded,
+      onAdFailed: onAdFailed,
+    );
+  }
+
   /// Preload Full-Screen Interstitial Ad safely
   static void loadInterstitialAd() {
     if (kIsWeb || _isLoadingInterstitial || isInterstitialLoaded) return;
@@ -179,7 +190,39 @@ class AdMobService {
     );
   }
 
-  /// Safe Placement 3 & 6: Interstitial Ad Trigger
+  /// Backward compatible Interstitial Ad Trigger expected by all screens
+  static void showInterstitialAd({Function()? onComplete}) {
+    if (!canShowInterstitialThisMatch) {
+      if (onComplete != null) onComplete();
+      return;
+    }
+    _interstitialsShownThisMatch++;
+
+    if (isInterstitialLoaded && _interstitialAd != null) {
+      _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+        onAdDismissedFullScreenContent: (ad) {
+          ad.dispose();
+          isInterstitialLoaded = false;
+          _interstitialAd = null;
+          loadInterstitialAd();
+          if (onComplete != null) onComplete();
+        },
+        onAdFailedToShowFullScreenContent: (ad, error) {
+          ad.dispose();
+          isInterstitialLoaded = false;
+          _interstitialAd = null;
+          loadInterstitialAd();
+          if (onComplete != null) onComplete();
+        },
+      );
+      _interstitialAd!.show();
+    } else {
+      loadInterstitialAd();
+      if (onComplete != null) onComplete();
+    }
+  }
+
+  /// Safe Placement 3 & 6: Natural Transition Interstitial Ad Trigger
   /// - Natural screen transition only (Innings Break & Before Scorecard)
   /// - Max 2 per match
   /// - Won't repeat on back/resume visits to the same screen
@@ -202,32 +245,7 @@ class AdMobService {
     }
 
     _visitedInterstitialScreens.add(screenKey);
-
-    if (isInterstitialLoaded && _interstitialAd != null) {
-      _interstitialsShownThisMatch++;
-      _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
-        onAdDismissedFullScreenContent: (ad) {
-          ad.dispose();
-          isInterstitialLoaded = false;
-          _interstitialAd = null;
-          loadInterstitialAd();
-          onContinue();
-        },
-        onAdFailedToShowFullScreenContent: (ad, error) {
-          ad.dispose();
-          isInterstitialLoaded = false;
-          _interstitialAd = null;
-          loadInterstitialAd();
-          onContinue();
-        },
-      );
-      _interstitialAd!.show();
-    } else {
-      // Continue seamlessly if ad is not ready
-      debugPrint('[AdMobService] Interstitial not ready. Proceeding without ad delay.');
-      loadInterstitialAd();
-      onContinue();
-    }
+    showInterstitialAd(onComplete: onContinue);
   }
 
   /// Placements 2 & 5: Native Ad creator

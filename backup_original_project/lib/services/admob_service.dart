@@ -3,24 +3,18 @@ import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class AdMobService {
-  // ==========================================
-  // OFFICIAL GOOGLE ADMOB TEST AD UNIT IDS
-  // Replace these with your live Ad Unit IDs before releasing to Google Play / App Store
-  // ==========================================
-  
-  // Banner Ad Units
   static const String _testBannerAndroid = 'ca-app-pub-3940256099942544/6300978111';
   static const String _testBannerIOS = 'ca-app-pub-3940256099942544/2934735716';
 
-  // Interstitial Ad Units
   static const String _testInterstitialAndroid = 'ca-app-pub-3940256099942544/1033173712';
   static const String _testInterstitialIOS = 'ca-app-pub-3940256099942544/4411468910';
 
-  // Rewarded Video Ad Units
+  static const String _testNativeAndroid = 'ca-app-pub-3940256099942544/2247696110';
+  static const String _testNativeIOS = 'ca-app-pub-3940256099942544/3986624511';
+
   static const String _testRewardedAndroid = 'ca-app-pub-3940256099942544/5224354917';
   static const String _testRewardedIOS = 'ca-app-pub-3940256099942544/1712485313';
 
-  // Platform-aware unit getters
   static String get bannerAdUnitId {
     if (kIsWeb) return _testBannerAndroid;
     if (Platform.isAndroid) return _testBannerAndroid;
@@ -35,6 +29,13 @@ class AdMobService {
     return _testInterstitialAndroid;
   }
 
+  static String get nativeAdUnitId {
+    if (kIsWeb) return _testNativeAndroid;
+    if (Platform.isAndroid) return _testNativeAndroid;
+    if (Platform.isIOS) return _testNativeIOS;
+    return _testNativeAndroid;
+  }
+
   static String get rewardedAdUnitId {
     if (kIsWeb) return _testRewardedAndroid;
     if (Platform.isAndroid) return _testRewardedAndroid;
@@ -42,36 +43,41 @@ class AdMobService {
     return _testRewardedAndroid;
   }
 
-  // State management
   static InterstitialAd? _interstitialAd;
   static bool isInterstitialLoaded = false;
+  static bool _isLoadingInterstitial = false;
 
   static RewardedAd? _rewardedAd;
   static bool isRewardedLoaded = false;
 
-  // Strict Global Match Ads Cap: max 8 all types of ads in entire match
-  static int matchAdsShown = 0;
-  static const int maxAdsPerMatch = 8;
-  static bool get canShowAd => matchAdsShown < maxAdsPerMatch;
+  static String? _currentMatchId;
+  static int _interstitialsShownThisMatch = 0;
+  static const int maxInterstitialsPerMatch = 2;
+  static final Set<String> _visitedInterstitialScreens = {};
 
-  static void resetMatchAds() {
-    matchAdsShown = 0;
+  static void registerMatchSession(String matchId) {
+    if (_currentMatchId != matchId) {
+      _currentMatchId = matchId;
+      _interstitialsShownThisMatch = 0;
+      _visitedInterstitialScreens.clear();
+    }
   }
 
-  /// Call once inside main() after WidgetsFlutterBinding.ensureInitialized()
+  static bool get canShowInterstitialThisMatch =>
+      _interstitialsShownThisMatch < maxInterstitialsPerMatch;
+
   static Future<void> initialize() async {
+    if (kIsWeb) return;
     try {
       await MobileAds.instance.initialize();
       loadInterstitialAd();
       loadRewardedAd();
-      debugPrint('[AdMobService] Google Mobile Ads initialized successfully.');
     } catch (e) {
-      debugPrint('[AdMobService] Initialization warning: $e');
+      debugPrint('[AdMobService] Warning: $e');
     }
   }
 
-  /// Create and load a 320x50 Banner Ad
-  static BannerAd createBannerAd({
+  static BannerAd createAdaptiveBannerAd({
     required Function() onAdLoaded,
     Function(LoadAdError)? onAdFailed,
   }) {
@@ -80,23 +86,29 @@ class AdMobService {
       size: AdSize.banner,
       request: const AdRequest(),
       listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          debugPrint('[AdMobService] Banner Ad loaded successfully.');
-          onAdLoaded();
-        },
+        onAdLoaded: (ad) => onAdLoaded(),
         onAdFailedToLoad: (ad, error) {
-          debugPrint('[AdMobService] Banner Ad failed to load: ${error.message}');
           ad.dispose();
           if (onAdFailed != null) onAdFailed(error);
         },
-        onAdOpened: (ad) => debugPrint('[AdMobService] Banner ad opened.'),
-        onAdClosed: (ad) => debugPrint('[AdMobService] Banner ad closed.'),
       ),
     );
   }
 
-  /// Preload Full-Screen Interstitial Ad
+  static BannerAd createBannerAd({
+    required Function() onAdLoaded,
+    Function(LoadAdError)? onAdFailed,
+  }) {
+    return createAdaptiveBannerAd(
+      onAdLoaded: onAdLoaded,
+      onAdFailed: onAdFailed,
+    );
+  }
+
   static void loadInterstitialAd() {
+    if (kIsWeb || _isLoadingInterstitial || isInterstitialLoaded) return;
+    _isLoadingInterstitial = true;
+
     InterstitialAd.load(
       adUnitId: interstitialAdUnitId,
       request: const AdRequest(),
@@ -104,51 +116,99 @@ class AdMobService {
         onAdLoaded: (ad) {
           _interstitialAd = ad;
           isInterstitialLoaded = true;
-          debugPrint('[AdMobService] Interstitial Ad loaded and ready.');
-          
+          _isLoadingInterstitial = false;
+
           _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
             onAdDismissedFullScreenContent: (ad) {
               ad.dispose();
               isInterstitialLoaded = false;
-              loadInterstitialAd(); // Immediately preload next ad
+              _interstitialAd = null;
+              loadInterstitialAd();
             },
             onAdFailedToShowFullScreenContent: (ad, error) {
               ad.dispose();
               isInterstitialLoaded = false;
+              _interstitialAd = null;
               loadInterstitialAd();
             },
           );
         },
         onAdFailedToLoad: (error) {
-          debugPrint('[AdMobService] Interstitial Ad failed to load: ${error.message}');
           isInterstitialLoaded = false;
+          _isLoadingInterstitial = false;
           _interstitialAd = null;
         },
       ),
     );
   }
 
-  /// Show Interstitial Ad (strictly max 8 all types of ads in entire match)
   static void showInterstitialAd({Function()? onComplete}) {
-    if (!canShowAd) {
-      debugPrint('[AdMobService] Strict match limit of 8 ads reached. Not showing interstitial ad.');
+    if (!canShowInterstitialThisMatch) {
       if (onComplete != null) onComplete();
       return;
     }
-    matchAdsShown++;
+    _interstitialsShownThisMatch++;
 
     if (isInterstitialLoaded && _interstitialAd != null) {
+      _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+        onAdDismissedFullScreenContent: (ad) {
+          ad.dispose();
+          isInterstitialLoaded = false;
+          _interstitialAd = null;
+          loadInterstitialAd();
+          if (onComplete != null) onComplete();
+        },
+        onAdFailedToShowFullScreenContent: (ad, error) {
+          ad.dispose();
+          isInterstitialLoaded = false;
+          _interstitialAd = null;
+          loadInterstitialAd();
+          if (onComplete != null) onComplete();
+        },
+      );
       _interstitialAd!.show();
-      if (onComplete != null) onComplete();
     } else {
-      debugPrint('[AdMobService] Interstitial Ad was not ready yet, preloading...');
       loadInterstitialAd();
       if (onComplete != null) onComplete();
     }
   }
 
-  /// Preload Rewarded Video Ad
+  static void showNaturalTransitionInterstitial({
+    required String screenKey,
+    required Function() onContinue,
+  }) {
+    if (kIsWeb) {
+      onContinue();
+      return;
+    }
+    if (!canShowInterstitialThisMatch || _visitedInterstitialScreens.contains(screenKey)) {
+      onContinue();
+      return;
+    }
+    _visitedInterstitialScreens.add(screenKey);
+    showInterstitialAd(onComplete: onContinue);
+  }
+
+  static NativeAd createNativeAd({
+    required Function() onAdLoaded,
+    Function(LoadAdError)? onAdFailed,
+  }) {
+    return NativeAd(
+      adUnitId: nativeAdUnitId,
+      factoryId: 'cricketNativeAdFactory',
+      request: const AdRequest(),
+      listener: NativeAdListener(
+        onAdLoaded: (ad) => onAdLoaded(),
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+          if (onAdFailed != null) onAdFailed(error);
+        },
+      ),
+    );
+  }
+
   static void loadRewardedAd() {
+    if (kIsWeb) return;
     RewardedAd.load(
       adUnitId: rewardedAdUnitId,
       request: const AdRequest(),
@@ -156,13 +216,11 @@ class AdMobService {
         onAdLoaded: (ad) {
           _rewardedAd = ad;
           isRewardedLoaded = true;
-          debugPrint('[AdMobService] Rewarded Video Ad loaded and ready.');
-
           _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
             onAdDismissedFullScreenContent: (ad) {
               ad.dispose();
               isRewardedLoaded = false;
-              loadRewardedAd(); // Preload next
+              loadRewardedAd();
             },
             onAdFailedToShowFullScreenContent: (ad, error) {
               ad.dispose();
@@ -172,7 +230,6 @@ class AdMobService {
           );
         },
         onAdFailedToLoad: (error) {
-          debugPrint('[AdMobService] Rewarded Ad failed to load: ${error.message}');
           isRewardedLoaded = false;
           _rewardedAd = null;
         },
@@ -180,24 +237,17 @@ class AdMobService {
     );
   }
 
-  /// Show Rewarded Video Ad and trigger reward callback (strictly max 8 all types of ads in entire match)
   static void showRewardedAd({required Function(RewardItem reward) onUserEarnedReward}) {
-    if (!canShowAd) {
-      debugPrint('[AdMobService] Strict match limit of 8 ads reached. Not showing rewarded ad.');
-      return;
-    }
-    matchAdsShown++;
-
     if (isRewardedLoaded && _rewardedAd != null) {
       _rewardedAd!.show(
         onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {
-          debugPrint('[AdMobService] User earned reward: ${reward.amount} ${reward.type}');
           onUserEarnedReward(reward);
         },
       );
     } else {
-      debugPrint('[AdMobService] Rewarded Ad not ready. Preloading...');
       loadRewardedAd();
     }
   }
+
+  static int get interstitialsShownThisMatch => _interstitialsShownThisMatch;
 }
