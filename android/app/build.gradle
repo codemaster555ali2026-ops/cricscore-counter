@@ -32,17 +32,21 @@ def resolveKeystoreFile = {
         if (fApp.exists()) return fApp
         def fRoot = rootProject.file(path)
         if (fRoot.exists()) return fRoot
+        def fRootApp = rootProject.file("app/${path}")
+        if (fRootApp.exists()) return fRootApp
     }
     if (file('release.keystore').exists()) return file('release.keystore')
     if (file('release.jks').exists()) return file('release.jks')
+    if (rootProject.file('app/release.keystore').exists()) return rootProject.file('app/release.keystore')
+    if (rootProject.file('app/release.jks').exists()) return rootProject.file('app/release.jks')
     if (file('upload-keystore.jks').exists()) return file('upload-keystore.jks')
     return null
 }
 
 def releaseKeystore = resolveKeystoreFile()
-def releaseKeyAlias = System.getenv("KEY_ALIAS") ?: System.getenv("ANDROID_KEY_ALIAS") ?: keystoreProperties.getProperty('keyAlias')
-def releaseKeyPassword = System.getenv("KEY_PASSWORD") ?: System.getenv("ANDROID_KEY_PASSWORD") ?: keystoreProperties.getProperty('keyPassword')
-def releaseStorePassword = System.getenv("STORE_PASSWORD") ?: System.getenv("ANDROID_STORE_PASSWORD") ?: System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: keystoreProperties.getProperty('storePassword')
+def releaseKeyAlias = System.getenv("KEY_ALIAS") ?: keystoreProperties.getProperty('keyAlias')
+def releaseKeyPassword = System.getenv("KEY_PASSWORD") ?: keystoreProperties.getProperty('keyPassword')
+def releaseStorePassword = System.getenv("STORE_PASSWORD") ?: keystoreProperties.getProperty('storePassword')
 def isReleaseSigningConfigured = releaseKeystore != null && releaseKeystore.exists() && releaseKeyAlias && releaseKeyPassword && releaseStorePassword
 
 android {
