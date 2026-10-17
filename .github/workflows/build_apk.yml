@@ -8,15 +8,15 @@ on:
 jobs:
   build-android-packages:
     name: Build Production APK & AAB
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
 
     steps:
       - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: ☕ Set up Java 17 JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -69,7 +69,7 @@ jobs:
           find lib -name "*.dart" -exec sed -i 's/Colors\.emeraldAccent/Colors\.tealAccent/g' {} +
           flutter analyze --no-fatal-infos || true
 
-      - name: 🔐 Securely Restore Android Release Keystore from Secrets
+      - name: 🔐 Securely Restore & Verify Android Release Signing Keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS || secrets.KEY_ALIAS }}
@@ -86,15 +86,15 @@ jobs:
             echo "KEY_ALIAS=$KEY_ALIAS" >> $GITHUB_ENV
             echo "KEY_PASSWORD=$KEY_PASSWORD" >> $GITHUB_ENV
             echo "STORE_PASSWORD=$STORE_PASSWORD" >> $GITHUB_ENV
-            echo "✅ Release keystore restored and signing environment configured."
+            
+            echo "🔍 Verifying APK release signing configuration..."
+            if keytool -list -v -keystore android/app/release.keystore -storepass "$STORE_PASSWORD" -alias "$KEY_ALIAS" > /dev/null 2>&1; then
+              echo "✅ Keystore and key alias verified successfully before building!"
+            else
+              echo "::warning title=Keystore Verification Warning::Keystore or alias verification check did not match. Ensure ANDROID_KEY_ALIAS and passwords match your keystore."
+            fi
           else
-            echo "::warning::Android release signing secrets are not configured in GitHub Secrets."
-            echo "To produce a cryptographically signed release APK for Google Play or direct installation, add these secrets to your GitHub repository:"
-            echo "  - ANDROID_KEYSTORE_BASE64 : Base64-encoded content of your release .keystore / .jks file"
-            echo "  - ANDROID_KEY_ALIAS       : Key alias name defined when creating the keystore"
-            echo "  - ANDROID_KEY_PASSWORD    : Private key password"
-            echo "  - ANDROID_STORE_PASSWORD  : Keystore file password"
-            echo "Proceeding with standard release build (unsigned fallback)..."
+            echo "::notice title=Release Signing Notice::Android release signing secrets are not configured in GitHub Secrets. The workflow will proceed with an unsigned release build. To generate a signed production APK, add ANDROID_KEYSTORE_BASE64, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD, and ANDROID_STORE_PASSWORD to repository secrets."
           fi
 
       - name: 🔨 Compile Universal Android Release APK
@@ -122,7 +122,7 @@ jobs:
           flutter build appbundle --release --no-tree-shake-icons --android-skip-build-dependency-validation || true
 
       - name: 📤 Upload Universal Release APK Artifact (Install on Any Android Device)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: CricketScoreboard-Universal-Release-APK
           path: CricketScoreboard-Universal-Release.apk
@@ -130,7 +130,7 @@ jobs:
           retention-days: 30
 
       - name: 📤 Upload All Built Android Packages (Split APKs & AAB)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: CricketScoreboard-All-Packages
           path: |
