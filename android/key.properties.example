@@ -1,0 +1,8 @@
+# Android Release Keystore Configuration Example
+# Copy this file to android/key.properties and fill in your credentials.
+# NEVER commit android/key.properties to git! (It is ignored by .gitignore)
+
+storePassword=YOUR_STORE_PASSWORD
+keyPassword=YOUR_KEY_PASSWORD
+keyAlias=YOUR_KEY_ALIAS
+storeFile=release.keystore

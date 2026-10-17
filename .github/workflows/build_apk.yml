@@ -69,15 +69,47 @@ jobs:
           find lib -name "*.dart" -exec sed -i 's/Colors\.emeraldAccent/Colors\.tealAccent/g' {} +
           flutter analyze --no-fatal-infos || true
 
+      - name: 🔐 Securely Restore Android Release Keystore from Secrets
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS || secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD || secrets.KEY_PASSWORD }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD || secrets.ANDROID_KEYSTORE_PASSWORD || secrets.STORE_PASSWORD }}
+        run: |
+          mkdir -p android/app
+          if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ] && [ -n "$STORE_PASSWORD" ]; then
+            echo "✅ Production signing secrets detected in GitHub Secrets."
+            echo "Restoring release keystore to android/app/release.keystore..."
+            echo "$KEYSTORE_BASE64" | base64 --decode > android/app/release.keystore
+            chmod 600 android/app/release.keystore
+            echo "KEYSTORE_PATH=release.keystore" >> $GITHUB_ENV
+            echo "KEY_ALIAS=$KEY_ALIAS" >> $GITHUB_ENV
+            echo "KEY_PASSWORD=$KEY_PASSWORD" >> $GITHUB_ENV
+            echo "STORE_PASSWORD=$STORE_PASSWORD" >> $GITHUB_ENV
+            echo "✅ Release keystore restored and signing environment configured."
+          else
+            echo "::warning::Android release signing secrets are not configured in GitHub Secrets."
+            echo "To produce a cryptographically signed release APK for Google Play or direct installation, add these secrets to your GitHub repository:"
+            echo "  - ANDROID_KEYSTORE_BASE64 : Base64-encoded content of your release .keystore / .jks file"
+            echo "  - ANDROID_KEY_ALIAS       : Key alias name defined when creating the keystore"
+            echo "  - ANDROID_KEY_PASSWORD    : Private key password"
+            echo "  - ANDROID_STORE_PASSWORD  : Keystore file password"
+            echo "Proceeding with standard release build (unsigned fallback)..."
+          fi
+
       - name: 🔨 Compile Universal Android Release APK
         run: |
           flutter build apk --release --no-tree-shake-icons --android-skip-build-dependency-validation
           if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
             cp build/app/outputs/flutter-apk/app-release.apk CricketScoreboard-Universal-Release.apk
-            echo "✅ Successfully generated CricketScoreboard-Universal-Release.apk"
+            echo "✅ Successfully generated CricketScoreboard-Universal-Release.apk (Signed Release APK)"
+            ls -lh CricketScoreboard-Universal-Release.apk
+          elif [ -f "build/app/outputs/flutter-apk/app-release-unsigned.apk" ]; then
+            cp build/app/outputs/flutter-apk/app-release-unsigned.apk CricketScoreboard-Universal-Release.apk
+            echo "ℹ️ Successfully generated CricketScoreboard-Universal-Release.apk (Unsigned Release APK)"
             ls -lh CricketScoreboard-Universal-Release.apk
           else
-            echo "❌ ERROR: build/app/outputs/flutter-apk/app-release.apk was not generated!"
+            echo "❌ ERROR: No release APK found in build/app/outputs/flutter-apk/!"
             exit 1
           fi
 

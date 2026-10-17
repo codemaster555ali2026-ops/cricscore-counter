@@ -15,6 +15,36 @@ if (localPropertiesFile.exists()) {
 def flutterVersionCode = localProperties.getProperty('flutter.versionCode') ?: '1'
 def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '1.0'
 
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withReader('UTF-8') { reader ->
+        keystoreProperties.load(reader)
+    }
+}
+
+def resolveKeystoreFile = {
+    def path = System.getenv("KEYSTORE_PATH") ?: System.getenv("ANDROID_KEYSTORE_PATH") ?: keystoreProperties.getProperty('storeFile')
+    if (path) {
+        def f = file(path)
+        if (f.exists()) return f
+        def fApp = file("app/${path}")
+        if (fApp.exists()) return fApp
+        def fRoot = rootProject.file(path)
+        if (fRoot.exists()) return fRoot
+    }
+    if (file('release.keystore').exists()) return file('release.keystore')
+    if (file('release.jks').exists()) return file('release.jks')
+    if (file('upload-keystore.jks').exists()) return file('upload-keystore.jks')
+    return null
+}
+
+def releaseKeystore = resolveKeystoreFile()
+def releaseKeyAlias = System.getenv("KEY_ALIAS") ?: System.getenv("ANDROID_KEY_ALIAS") ?: keystoreProperties.getProperty('keyAlias')
+def releaseKeyPassword = System.getenv("KEY_PASSWORD") ?: System.getenv("ANDROID_KEY_PASSWORD") ?: keystoreProperties.getProperty('keyPassword')
+def releaseStorePassword = System.getenv("STORE_PASSWORD") ?: System.getenv("ANDROID_STORE_PASSWORD") ?: System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: keystoreProperties.getProperty('storePassword')
+def isReleaseSigningConfigured = releaseKeystore != null && releaseKeystore.exists() && releaseKeyAlias && releaseKeyPassword && releaseStorePassword
+
 android {
     namespace "com.cricket.scoreboard.cricket_scoreboard_15phases"
     compileSdk = 36
@@ -44,15 +74,22 @@ android {
 
     signingConfigs {
         release {
-            initWith(signingConfigs.debug)
-            v1SigningEnabled true
-            v2SigningEnabled true
+            if (isReleaseSigningConfigured) {
+                storeFile releaseKeystore
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+                v1SigningEnabled true
+                v2SigningEnabled true
+            }
         }
     }
 
     buildTypes {
         release {
-            signingConfig signingConfigs.release
+            if (isReleaseSigningConfigured) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             shrinkResources false
         }
