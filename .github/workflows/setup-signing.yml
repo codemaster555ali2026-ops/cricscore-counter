@@ -94,13 +94,7 @@ jobs:
           # Explicitly verify that the generated file is a valid JKS keystore
           keytool -list -v -keystore permanent-release.jks -storetype JKS -storepass "$STORE_PASS" -alias "$ALIAS_NAME" > /dev/null
 
-          python3 -c "
-with open('permanent-release.jks', 'rb') as f:
-    magic = f.read(4)
-    if magic != b'\xfe\xed\xfe\xed':
-        raise ValueError(f'Generated keystore is not a valid JKS file. Magic header: {magic.hex()}')
-print('JKS magic header verified (0xFEEDFEED).')
-"
+          python3 -c "f = open('permanent-release.jks', 'rb'); magic = f.read(4); assert magic == b'\xfe\xed\xfe\xed', f'Generated keystore is not a valid JKS file. Magic header: {magic.hex()}'; print('JKS magic header verified (0xFEEDFEED).')"
 
           # Extract SHA-256 public certificate fingerprint for verification
           KEY_SHA256=$(keytool -list -v -keystore permanent-release.jks -storetype JKS -storepass "$STORE_PASS" -alias "$ALIAS_NAME" | grep -m1 "SHA256:" | awk '{print $2}' | tr -d ' :' | tr '[:upper:]' '[:lower:]')
@@ -111,35 +105,35 @@ print('JKS magic header verified (0xFEEDFEED).')
           echo "::add-mask::$KEYSTORE_BASE64_VAL"
 
           # Prepare credential documentation for the user inside the encrypted container only
-          cat <<EOF > signing-credentials.txt
-================================================================================
-CRICKET SCOREBOARD - PERMANENT ANDROID RELEASE SIGNING CREDENTIALS
-================================================================================
-Application ID: com.cricket.scoreboard.cricket_scoreboard_15phases
-Certificate SHA-256 Fingerprint: $KEY_SHA256
-Key Algorithm: RSA 3072-bit
-Keystore Format: Java KeyStore (JKS)
-Validity: 10,000 Days (~27 Years)
-Generated On: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
-
-INSTRUCTIONS FOR MOBILE / DESKTOP:
-Copy each of the 4 values below into your GitHub repository settings:
-GitHub Repository -> Settings -> Secrets and variables -> Actions -> New repository secret
---------------------------------------------------------------------------------
-1. Secret Name: KEY_ALIAS
-   Secret Value: $ALIAS_NAME
-
-2. Secret Name: STORE_PASSWORD
-   Secret Value: $STORE_PASS
-
-3. Secret Name: KEY_PASSWORD
-   Secret Value: $KEY_PASS
-
-4. Secret Name: KEYSTORE_BASE64
-   Secret Value:
-$KEYSTORE_BASE64_VAL
-================================================================================
-EOF
+          {
+            echo "================================================================================"
+            echo "CRICKET SCOREBOARD - PERMANENT ANDROID RELEASE SIGNING CREDENTIALS"
+            echo "================================================================================"
+            echo "Application ID: com.cricket.scoreboard.cricket_scoreboard_15phases"
+            echo "Certificate SHA-256 Fingerprint: $KEY_SHA256"
+            echo "Key Algorithm: RSA 3072-bit"
+            echo "Keystore Format: Java KeyStore (JKS)"
+            echo "Validity: 10,000 Days (~27 Years)"
+            echo "Generated On: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            echo ""
+            echo "INSTRUCTIONS FOR MOBILE / DESKTOP:"
+            echo "Copy each of the 4 values below into your GitHub repository settings:"
+            echo "GitHub Repository -> Settings -> Secrets and variables -> Actions -> New repository secret"
+            echo "--------------------------------------------------------------------------------"
+            echo "1. Secret Name: KEY_ALIAS"
+            echo "   Secret Value: $ALIAS_NAME"
+            echo ""
+            echo "2. Secret Name: STORE_PASSWORD"
+            echo "   Secret Value: $STORE_PASS"
+            echo ""
+            echo "3. Secret Name: KEY_PASSWORD"
+            echo "   Secret Value: $KEY_PASS"
+            echo ""
+            echo "4. Secret Name: KEYSTORE_BASE64"
+            echo "   Secret Value:"
+            echo "$KEYSTORE_BASE64_VAL"
+            echo "================================================================================"
+          } > signing-credentials.txt
 
           # Encrypt the keystore and credentials using AES-256 with the user's secret passphrase
           tar -czf - permanent-release.jks signing-credentials.txt | gpg --symmetric --cipher-algo AES256 --batch --yes --passphrase "$BACKUP_PASSPHRASE" -o permanent-signing-backup.tar.gz.gpg
@@ -163,12 +157,7 @@ EOF
           fi
 
           # Verify JKS header of decrypted keystore
-          python3 -c "
-with open('.verify_backup/permanent-release.jks', 'rb') as f:
-    magic = f.read(4)
-    if magic != b'\xfe\xed\xfe\xed':
-        raise ValueError('Decrypted keystore is not a valid JKS file.')
-"
+          python3 -c "f = open('.verify_backup/permanent-release.jks', 'rb'); magic = f.read(4); assert magic == b'\xfe\xed\xfe\xed', 'Decrypted keystore is not a valid JKS file.'; print('Decrypted JKS magic header verified.')"
 
           # Verify decrypted keystore SHA-256 fingerprint matches original
           DECRYPTED_SHA256=$(keytool -list -v -keystore .verify_backup/permanent-release.jks -storetype JKS -storepass:env STORE_PASS -alias cricket_release_key 2>/dev/null || true)

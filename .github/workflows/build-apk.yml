@@ -115,12 +115,12 @@ jobs:
           chmod 600 android/app/release.keystore
 
           # Write android/key.properties for full Gradle compatibility
-          cat <<EOF > android/key.properties
-storeFile=app/release.keystore
-keyAlias=$KEY_ALIAS
-keyPassword=$KEY_PASSWORD
-storePassword=$STORE_PASSWORD
-EOF
+          {
+            echo "storeFile=app/release.keystore"
+            echo "keyAlias=$KEY_ALIAS"
+            echo "keyPassword=$KEY_PASSWORD"
+            echo "storePassword=$STORE_PASSWORD"
+          } > android/key.properties
           chmod 600 android/key.properties
 
           # Validate keystore and extract expected SHA-256 fingerprint

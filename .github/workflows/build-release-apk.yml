@@ -128,12 +128,12 @@ jobs:
           fi
 
           # 4. Generate key.properties securely during execution
-          cat <<EOF > android/key.properties
-storeFile=app/release.jks
-keyAlias=$KEY_ALIAS
-storePassword=$STORE_PASSWORD
-keyPassword=$KEYSTORE_PASSWORD
-EOF
+          {
+            echo "storeFile=app/release.jks"
+            echo "keyAlias=$KEY_ALIAS"
+            echo "storePassword=$STORE_PASSWORD"
+            echo "keyPassword=$KEYSTORE_PASSWORD"
+          } > android/key.properties
           chmod 600 android/key.properties
 
           # 5. Verify keystore integrity with Java keytool without exposing credentials
