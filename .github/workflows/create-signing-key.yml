@@ -1,0 +1,129 @@
+name: Create Android Release Signing Key
+
+on:
+  workflow_dispatch:
+
+jobs:
+  generate-signing-key:
+    name: Generate Permanent Release Key
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v5
+
+      - name: ☕ Set up Java 17 JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: 🛡️ Verify Preconditions & Prevent Overwrite
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          EXISTING_KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          # Mask password immediately if present
+          if [ -n "$KEYSTORE_PASSWORD" ]; then
+            echo "::add-mask::$KEYSTORE_PASSWORD"
+          fi
+
+          # Prevent accidental regeneration or overwriting an existing key
+          if [ -n "$EXISTING_KEYSTORE_BASE64" ]; then
+            echo "::error title=Signing Key Already Exists::A KEYSTORE_BASE64 secret is already configured in GitHub Secrets. Aborting to protect your existing signing identity."
+            exit 1
+          fi
+
+          # Check that KEYSTORE_PASSWORD secret exists
+          if [ -z "$KEYSTORE_PASSWORD" ]; then
+            echo "::error title=Missing Secret: KEYSTORE_PASSWORD::GitHub Secret 'KEYSTORE_PASSWORD' is not set."
+            echo "====================================================================================="
+            echo "❌ ACTION REQUIRED: KEYSTORE_PASSWORD Secret Missing"
+            echo "====================================================================================="
+            echo "Before running this workflow, add your chosen password to GitHub Repository Secrets:"
+            echo "1. Go to repository Settings -> Secrets and variables -> Actions -> New repository secret"
+            echo "2. Name: KEYSTORE_PASSWORD"
+            echo "3. Value: <your secret password>"
+            echo "4. Return to the Actions tab and run this workflow again."
+            echo "====================================================================================="
+            exit 1
+          fi
+
+          if [ ${#KEYSTORE_PASSWORD} -lt 6 ]; then
+            echo "::error title=Password Too Short::KEYSTORE_PASSWORD must be at least 6 characters long."
+            exit 1
+          fi
+
+      - name: 🔑 Generate cricket-release.jks Keystore
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          mkdir -p .keystore_workspace
+          cd .keystore_workspace
+
+          echo "::add-mask::$KEYSTORE_PASSWORD"
+          ALIAS_NAME="cricket_release"
+
+          # Generate the permanent Android release keystore using Java keytool
+          keytool -genkeypair -v \
+            -keystore cricket-release.jks \
+            -storetype JKS \
+            -alias "$ALIAS_NAME" \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass "$KEYSTORE_PASSWORD" \
+            -keypass "$KEYSTORE_PASSWORD" \
+            -dname "CN=Cricket Scoreboard, OU=Mobile Development, O=Cricket Scoreboard, L=Global, ST=State, C=US"
+
+          # Verify the generated file is a valid JKS keystore
+          keytool -list -v \
+            -keystore cricket-release.jks \
+            -storetype JKS \
+            -storepass "$KEYSTORE_PASSWORD" \
+            -alias "$ALIAS_NAME" > /dev/null
+
+          # Extract public SHA-256 certificate fingerprint (safe to display, not a secret)
+          CERT_SHA256=$(keytool -list -v -keystore cricket-release.jks -storetype JKS -storepass "$KEYSTORE_PASSWORD" -alias "$ALIAS_NAME" | grep -m1 "SHA256:" | awk '{print $2}')
+          echo "PUBLIC_SHA256=$CERT_SHA256" >> $GITHUB_ENV
+          echo "ALIAS_NAME=$ALIAS_NAME" >> $GITHUB_ENV
+
+          echo "✅ Keystore cricket-release.jks successfully generated and verified."
+
+      - name: 📤 Upload Keystore Artifact (1-Day Retention)
+        uses: actions/upload-artifact@v5
+        with:
+          name: cricket-release-keystore
+          path: .keystore_workspace/cricket-release.jks
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: 📋 Display Setup Instructions in Summary
+        run: |
+          echo "### 🔐 Android Release Keystore Created Successfully" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **File Name**: \`cricket-release.jks\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Key Alias**: \`$ALIAS_NAME\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Public Certificate SHA-256**: \`$PUBLIC_SHA256\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Validity**: 10,000 Days (~27 Years)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Artifact Retention**: 1 Day (Private download)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### 📥 Next Steps to Complete Release Signing Configuration:" >> $GITHUB_STEP_SUMMARY
+          echo "1. Scroll down to **Artifacts** below on this run page and download **\`cricket-release-keystore\`**." >> $GITHUB_STEP_SUMMARY
+          echo "2. Unzip the downloaded file to get \`cricket-release.jks\`." >> $GITHUB_STEP_SUMMARY
+          echo "3. Save \`cricket-release.jks\` in a secure private location (e.g., Google Drive or offline backup)." >> $GITHUB_STEP_SUMMARY
+          echo "4. Convert \`cricket-release.jks\` to Base64 to set your repository secret:" >> $GITHUB_STEP_SUMMARY
+          echo "   - On Linux / macOS / WSL: \`base64 -w 0 cricket-release.jks\` (or \`base64 -i cricket-release.jks\` on macOS)" >> $GITHUB_STEP_SUMMARY
+          echo "   - On Windows PowerShell: \`[Convert]::ToBase64String([IO.File]::ReadAllBytes('cricket-release.jks'))\`" >> $GITHUB_STEP_SUMMARY
+          echo "5. In your GitHub repository, go to **Settings > Secrets and variables > Actions > New repository secret** and configure:" >> $GITHUB_STEP_SUMMARY
+          echo "   - \`KEY_ALIAS\`: \`cricket_release\`" >> $GITHUB_STEP_SUMMARY
+          echo "   - \`KEY_PASSWORD\`: (the same value as your KEYSTORE_PASSWORD)" >> $GITHUB_STEP_SUMMARY
+          echo "   - \`STORE_PASSWORD\`: (the same value as your KEYSTORE_PASSWORD)" >> $GITHUB_STEP_SUMMARY
+          echo "   - \`KEYSTORE_BASE64\`: (the base64 string from step 4)" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🧹 Secure Cleanup of Workspace
+        if: always()
+        run: |
+          rm -rf .keystore_workspace
+          echo "Keystore workspace wiped from runner disk."
