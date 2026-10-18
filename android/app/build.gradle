@@ -45,8 +45,8 @@ def resolveKeystoreFile = {
 
 def releaseKeystore = resolveKeystoreFile()
 def releaseKeyAlias = System.getenv("KEY_ALIAS") ?: keystoreProperties.getProperty('keyAlias')
-def releaseKeyPassword = System.getenv("KEY_PASSWORD") ?: keystoreProperties.getProperty('keyPassword')
-def releaseStorePassword = System.getenv("STORE_PASSWORD") ?: keystoreProperties.getProperty('storePassword')
+def releaseKeyPassword = System.getenv("KEY_PASSWORD") ?: System.getenv("KEYSTORE_PASSWORD") ?: keystoreProperties.getProperty('keyPassword') ?: keystoreProperties.getProperty('keystorePassword')
+def releaseStorePassword = System.getenv("STORE_PASSWORD") ?: System.getenv("KEYSTORE_PASSWORD") ?: keystoreProperties.getProperty('storePassword') ?: keystoreProperties.getProperty('keystorePassword')
 def isReleaseSigningConfigured = releaseKeystore != null && releaseKeystore.exists() && releaseKeyAlias && releaseKeyPassword && releaseStorePassword
 
 android {

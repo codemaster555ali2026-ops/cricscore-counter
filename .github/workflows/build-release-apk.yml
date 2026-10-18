@@ -1,0 +1,246 @@
+name: Build Signed Release APK
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  build-release-apk:
+    name: Build Signed Release APK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ☕ Set up Java 17 JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: 🚀 Set up Flutter SDK (Stable Channel)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: 📱 Install & Verify Android SDK Platform 36 & Build-Tools
+        run: |
+          echo "Locating Android SDK installation..."
+          SDK_DIR="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          if [ -z "$SDK_DIR" ]; then
+            echo "::error title=Missing SDK Directory::Neither ANDROID_HOME nor ANDROID_SDK_ROOT is set in runner."
+            exit 1
+          fi
+
+          SDKMANAGER=""
+          if [ -x "$SDK_DIR/cmdline-tools/latest/bin/sdkmanager" ]; then
+            SDKMANAGER="$SDK_DIR/cmdline-tools/latest/bin/sdkmanager"
+          elif command -v sdkmanager &> /dev/null; then
+            SDKMANAGER="$(command -v sdkmanager)"
+          fi
+
+          if [ -z "$SDKMANAGER" ]; then
+            echo "::error title=Missing sdkmanager::Could not find Android sdkmanager tool in PATH or SDK directory."
+            exit 1
+          fi
+
+          echo "Accepting Android SDK licenses..."
+          yes | "$SDKMANAGER" --licenses || true
+
+          echo "Installing Android SDK Platform 36 and Build-Tools 36.0.0..."
+          "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0"
+
+          if [ ! -d "$SDK_DIR/platforms/android-36" ]; then
+            echo "::error title=Android SDK 36 Installation Failed::Platform directory '$SDK_DIR/platforms/android-36' does not exist."
+            exit 1
+          fi
+
+          echo "✅ Android SDK Platform 36 verified at: $SDK_DIR/platforms/android-36"
+
+      - name: 🔧 Prepare Build Environment
+        run: |
+          flutter config --no-analytics
+          chmod +x ./android/gradlew || true
+
+      - name: 🔐 Validate Secrets, Restore Keystore & Generate key.properties
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          # 1. Immediately register masks for all secrets so they never appear in logs
+          if [ -n "$KEYSTORE_BASE64" ]; then echo "::add-mask::$KEYSTORE_BASE64"; fi
+          if [ -n "$KEYSTORE_PASSWORD" ]; then echo "::add-mask::$KEYSTORE_PASSWORD"; fi
+          if [ -n "$STORE_PASSWORD" ]; then echo "::add-mask::$STORE_PASSWORD"; fi
+          if [ -n "$KEY_ALIAS" ]; then echo "::add-mask::$KEY_ALIAS"; fi
+
+          # 2. Strict validation: Fail clearly if any required secret is missing
+          MISSING=0
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error title=Missing Secret::Secret 'KEYSTORE_BASE64' is not configured in repository secrets."
+            MISSING=1
+          fi
+          if [ -z "$KEYSTORE_PASSWORD" ]; then
+            echo "::error title=Missing Secret::Secret 'KEYSTORE_PASSWORD' is not configured in repository secrets."
+            MISSING=1
+          fi
+          if [ -z "$STORE_PASSWORD" ]; then
+            echo "::error title=Missing Secret::Secret 'STORE_PASSWORD' is not configured in repository secrets."
+            MISSING=1
+          fi
+          if [ -z "$KEY_ALIAS" ]; then
+            echo "::error title=Missing Secret::Secret 'KEY_ALIAS' is not configured in repository secrets."
+            MISSING=1
+          fi
+
+          if [ "$MISSING" -ne 0 ]; then
+            echo "====================================================================================="
+            echo "❌ BUILD ABORTED: Missing Required Release Signing Secrets"
+            echo "====================================================================================="
+            echo "The following GitHub Repository Secrets must be configured under:"
+            echo "Settings -> Secrets and variables -> Actions -> Repository secrets"
+            echo ""
+            echo "Required Secrets:"
+            [ -z "$KEYSTORE_BASE64" ] && echo "  - KEYSTORE_BASE64 (Base64-encoded JKS keystore)"
+            [ -z "$KEYSTORE_PASSWORD" ] && echo "  - KEYSTORE_PASSWORD (Password for private key / keystore)"
+            [ -z "$STORE_PASSWORD" ] && echo "  - STORE_PASSWORD (Keystore store password)"
+            [ -z "$KEY_ALIAS" ] && echo "  - KEY_ALIAS (Alias name of the release signing key)"
+            echo "====================================================================================="
+            exit 1
+          fi
+
+          # 3. Decode KEYSTORE_BASE64 into temporary .jks file
+          mkdir -p android/app
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/release.jks
+          chmod 600 android/app/release.jks
+
+          if [ ! -s android/app/release.jks ]; then
+            echo "::error title=Keystore Decode Failed::Decoded keystore android/app/release.jks is empty or corrupted."
+            exit 1
+          fi
+
+          # 4. Generate key.properties securely during execution
+          cat <<EOF > android/key.properties
+storeFile=app/release.jks
+keyAlias=$KEY_ALIAS
+storePassword=$STORE_PASSWORD
+keyPassword=$KEYSTORE_PASSWORD
+EOF
+          chmod 600 android/key.properties
+
+          # 5. Verify keystore integrity with Java keytool without exposing credentials
+          echo "Validating existing keystore and alias with Java keytool..."
+          if ! keytool -list -keystore android/app/release.jks -storetype JKS -storepass "$STORE_PASSWORD" -alias "$KEY_ALIAS" > /dev/null 2>&1; then
+            echo "::error title=Keystore Verification Failed::Unable to access alias '$KEY_ALIAS' in android/app/release.jks using STORE_PASSWORD. Please verify KEY_ALIAS and STORE_PASSWORD secrets."
+            exit 1
+          fi
+
+          # Extract public certificate SHA-256 for later signature verification
+          EXPECTED_SHA256=$(keytool -list -v -keystore android/app/release.jks -storetype JKS -storepass "$STORE_PASSWORD" -alias "$KEY_ALIAS" | grep -m1 "SHA256:" | awk '{print $2}' | tr -d ' :' | tr '[:upper:]' '[:lower:]')
+          if [ -n "$EXPECTED_SHA256" ]; then
+            echo "EXPECTED_CERT_SHA256=$EXPECTED_SHA256" >> $GITHUB_ENV
+            echo "✅ Keystore verified. Public Certificate SHA-256: $EXPECTED_SHA256"
+          else
+            echo "✅ Keystore verified successfully."
+          fi
+
+          echo "KEYSTORE_PATH=app/release.jks" >> $GITHUB_ENV
+          echo "KEY_ALIAS=$KEY_ALIAS" >> $GITHUB_ENV
+          echo "KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> $GITHUB_ENV
+          echo "STORE_PASSWORD=$STORE_PASSWORD" >> $GITHUB_ENV
+          echo "KEY_PASSWORD=$KEYSTORE_PASSWORD" >> $GITHUB_ENV
+
+      - name: 📦 Install Flutter Dependencies
+        run: flutter pub get
+
+      - name: 🛡️ Analyze Dart Code
+        run: flutter analyze
+
+      - name: 🔨 Build Signed Release APK
+        env:
+          KEYSTORE_PATH: app/release.jks
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          flutter build apk --release --no-tree-shake-icons
+
+          # Locate built release APK
+          APK_FILE="build/app/outputs/flutter-apk/app-release.apk"
+          if [ ! -f "$APK_FILE" ]; then
+            APK_FILE="build/app/outputs/apk/release/app-release.apk"
+          fi
+
+          if [ ! -f "$APK_FILE" ]; then
+            echo "::error::Release APK was not found at $APK_FILE!"
+            exit 1
+          fi
+
+          mkdir -p dist-apk
+          cp "$APK_FILE" dist-apk/CricketScoreboard-Release.apk
+          echo "SIGNED_APK_PATH=dist-apk/CricketScoreboard-Release.apk" >> $GITHUB_ENV
+          echo "✅ Successfully generated: dist-apk/CricketScoreboard-Release.apk"
+
+      - name: 🔍 Verify Release APK Cryptographic Signature
+        run: |
+          APKSIGNER=$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools" -name apksigner -type f | sort -V | tail -n1)
+          if [ -z "$APKSIGNER" ] || [ ! -x "$APKSIGNER" ]; then
+            APKSIGNER="apksigner"
+          fi
+
+          echo "Verifying APK signature using $APKSIGNER..."
+          VERIFY_OUTPUT=$("$APKSIGNER" verify --print-certs --verbose "${{ env.SIGNED_APK_PATH }}")
+
+          if echo "$VERIFY_OUTPUT" | grep -qi "Android Debug"; then
+            echo "::error::CRITICAL: APK was signed with a debug key! Release signing failed."
+            exit 1
+          fi
+
+          APK_SHA256=$(echo "$VERIFY_OUTPUT" | grep -i "SHA-256" | head -n1 | sed -e 's/.*SHA-256 digest: //i' -e 's/.*SHA-256: //i' | tr -d ' :' | tr '[:upper:]' '[:lower:]')
+
+          if [ -n "$EXPECTED_CERT_SHA256" ] && [ -n "$APK_SHA256" ]; then
+            echo "Expected Keystore Certificate SHA-256: $EXPECTED_CERT_SHA256"
+            echo "Signed APK Certificate SHA-256:       $APK_SHA256"
+            if [ "$APK_SHA256" != "$EXPECTED_CERT_SHA256" ]; then
+              echo "::error::Fingerprint mismatch! APK was not signed with the expected release keystore."
+              exit 1
+            fi
+            echo "✅ Cryptographic certificate fingerprint matches expected keystore."
+          fi
+
+          echo "✅ Verified: The APK is cryptographically signed with your production release key."
+          ls -lh "${{ env.SIGNED_APK_PATH }}"
+
+      - name: 📤 Upload Signed Release APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CricketScoreboard-Signed-Release-APK
+          path: ${{ env.SIGNED_APK_PATH }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: 📋 Summary
+        if: success()
+        run: |
+          echo "### 🏏 Cricket Scoreboard Signed Release APK" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ✅ Cryptographically Signed Release APK Generated" >> $GITHUB_STEP_SUMMARY
+          echo "- **Artifact Name**: \`CricketScoreboard-Signed-Release-APK\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Package Identity**: \`com.cricket.scoreboard.cricket_scoreboard_15phases\`" >> $GITHUB_STEP_SUMMARY
+          if [ -n "$EXPECTED_CERT_SHA256" ]; then
+            echo "- **Certificate SHA-256**: \`$EXPECTED_CERT_SHA256\`" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: 🧹 Secure Cleanup of Temporary Signing Files
+        if: always()
+        run: |
+          rm -f android/app/release.jks android/key.properties || true
+          echo "Temporary keystore and key.properties wiped from disk."
